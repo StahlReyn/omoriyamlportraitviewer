@@ -9,9 +9,19 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:yaml"
+  ],
   "main": "./extension.js",
   "contributes": {
+    "hoverProvider": [
+			{
+				"for": [
+					"yaml"
+				],
+				"type": "markdown"
+			}
+		],
     "commands": [{
       "command": "omoriyamlportraitviewer.helloWorld",
       "title": "Hello World"
