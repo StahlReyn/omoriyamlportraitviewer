@@ -9,7 +9,7 @@ This assumes the image is at `../../img/faces/ImageName.png` path from the yaml 
 
 For those downloading directly, check out [this guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#packaging-extensions).
 
-TL;DR: run `code --install-extension omoriYamlPortraitViewer-1.0.0.vsix`
+TL;DR: run `code --install-extension omoriyamlportraitviewer-1.0.0.vsix` or whatever the extension file name is downloaded.
 
 ## Credits
 
