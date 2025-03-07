@@ -2,13 +2,22 @@
   "name": "omoriyamlportraitviewer",
   "displayName": "omoriYamlPortraitViewer",
   "description": "Displays portrait in tool tips based from yaml",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
-    "vscode": "^1.98.0"
+    "vscode": "^1.60.0"
   },
-  "categories": [
-    "Other"
-  ],
+	"categories": [
+		"Programming Languages",
+		"Visualization",
+		"Formatters",
+		"Other"
+	],
+	"publisher": "ReynStahl",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/StahlReyn/omoriyamlportraitviewer.git"
+	},
   "activationEvents": [
     "onLanguage:yaml"
   ],
@@ -21,23 +30,10 @@
 				],
 				"type": "markdown"
 			}
-		],
-    "commands": [{
-      "command": "omoriyamlportraitviewer.helloWorld",
-      "title": "Hello World"
-    }]
+		]
   },
-  "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "vscode-test"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.98.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "eslint": "^9.21.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
-  }
+	"devDependencies": {
+		"vsce": "^2.15.0",
+		"vscode": "^1.1.37"
+	}
 }

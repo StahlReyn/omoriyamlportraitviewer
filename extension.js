@@ -9,13 +9,7 @@ let currentTooltipSize = 0;
 // Define available tooltip sizes
 const tooltipSizes = [100, 200, 300, 400, 500, 0];
 
-/**
- * Activates the extension
- */
 function activate(context) {
-	console.log("ACTIVATE PROVIDER")
-	vscode.window.showInformationMessage('Hello World!');
-
 	// Register command to open image in the editor
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.openImageYaml', (imgPath) => {
@@ -79,8 +73,7 @@ function processComment(commentText, document) {
 		const sizeLinks = tooltipSizes.map(size =>
 		{
 			const displaySize = size === 0 ? 'No Scale' : `${size}px`;
-			if (size === currentTooltipSize)
-			{
+			if (size === currentTooltipSize) {
 				return `**[${displaySize}](command:extension.resizeImageYaml?${encodeURIComponent(JSON.stringify({ imgPath, size }))})**`;
 			}
 

@@ -3,7 +3,13 @@
 ## Features
 
 This extension displays the faceset image from the dialogue YAML.
-This assumes the image is ../../img/faces/ImageName.png away from the yaml file it is in.
+This assumes the image is at `../../img/faces/ImageName.png` path from the yaml file's location.
+
+## Instructions
+
+For those downloading directly, check out [this guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#packaging-extensions).
+
+TL;DR: run `code --install-extension omoriYamlPortraitViewer-1.0.0.vsix`
 
 ## Credits
 
