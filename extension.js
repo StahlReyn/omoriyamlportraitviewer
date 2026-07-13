@@ -11,7 +11,11 @@ const tooltipSizes = [100, 200, 300, 400, 500, 0];
 
 // Global object to store the parsed documentation definitions
 let macroDocs = {};
-
+const fallbackDoc = { 
+	title: 'Macro Operator', 
+	desc: '*Unknown Macro. This may be defined by an external plugin.*',
+	source: 'Unknown'
+}
 
 function activate(context) {
 	try {
@@ -185,7 +189,7 @@ function processHighlight(context) {
 
 			// Fetch custom documentation card based on the tag prefix or simple name
 			const docLookupKey = macroPrefix ? macroPrefix.toLowerCase() : fullMatchStr.toLowerCase();
-			const docInfo = macroDocs[docLookupKey] || { title: 'Macro Operator', desc: 'Unknown Macro.' };
+			const docInfo = macroDocs[docLookupKey] || fallbackDoc;
 
 			// --- BRANCH 1: MACROS WITH PARAMETERS ---
 			if (innerAngleText !== undefined || innerSquareText !== undefined) {
@@ -209,6 +213,7 @@ function processHighlight(context) {
 				unifiedHover.appendMarkdown(`---\n`);
 				unifiedHover.appendMarkdown(`* **Syntax:** \`${macroPrefix}${openBracket}value${closeBracket}\`\n`);
 				unifiedHover.appendMarkdown(`* **Current Value:** \`${parameterValue}\``);
+				unifiedHover.appendMarkdown(`\n\nSource: \`${docInfo.source || "Unknown"}\``);
 
 				boxDecorations.push({ 
 					range: boxRange,
@@ -246,7 +251,7 @@ function processHighlight(context) {
 				const simpleHover = new vscode.MarkdownString();
 				simpleHover.appendMarkdown(`### ${docInfo.title}\n\n`);
 				simpleHover.appendMarkdown(`${docInfo.desc}\n\n`);
-				simpleHover.appendMarkdown(`---\n*Parameterless standalone macro token.*`);
+				simpleHover.appendMarkdown(`---\nSource: \`${docInfo.source || "Unknown"}\``);
 
 				simpleMacroDecorations.push({ 
 					range: simpleRange,
