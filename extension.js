@@ -116,48 +116,111 @@ function processComment(commentText, document) {
 	}
 }
 
+const macroBoxDecorationType = vscode.window.createTextEditorDecorationType({
+	backgroundColor: 'rgba(123, 39, 0, 0.15)', 
+	border: '1px solid rgba(255, 140, 0, 0.3)',
+	borderRadius: '3px',
+});
+
+const simpleMacroDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: 'rgba(37, 100, 44, 0.12)', // Subtle green background
+    border: '1px solid rgba(0, 146, 85, 0.4)', // Dashed border
+    borderRadius: '3px',
+    color: '#618576'                            // Green text color
+});
+
+const macroTextDecorationType = vscode.window.createTextEditorDecorationType({
+	color: '#966E00'
+});
+
+const innerTextDecorationType = vscode.window.createTextEditorDecorationType({
+	color: '#FFEE80'
+});
+
 function processHighlight(context) {
-	const macroDecorationType = vscode.window.createTextEditorDecorationType({
-		backgroundColor: 'rgba(255, 81, 0, 0.18)', 
-		border: '1px solid rgba(255, 140, 0, 0.4)',
-		borderRadius: '3px',
-		color: '#FFCC00'
-	});
-
-	const innerDecorationType = vscode.window.createTextEditorDecorationType({
-		color: '#00FFFF' // Inner bracket content color (e.g., Cyan)
-	});
-
 	let activeEditor = vscode.window.activeTextEditor;
-
+	
 	function updateDecorations() {
 		if (!activeEditor || activeEditor.document.languageId !== 'yaml') {
 			return;
 		}
 
 		const text = activeEditor.document.getText();
-		const decorations = [];
+		const boxDecorations = [];
+		const macroTextDecorations = [];
+		const innerTextDecorations = [];
+		const simpleMacroDecorations = [];
 
-		// Regex matching all the variations (\!, \c[12], \fn<font>, <br>, etc.)
 		const macroRegex = new RegExp([
-			/\\[a-zA-Z%]+(?:<[^>]+>|\[[^\]]+\])/, // Tagged styles like \fn<font> or \c[12]
+			/(\\[a-zA-Z%]+)(?:<([^>]+)>|\[([^\]]+)\])/, // Group 1: Prefix, Group 2: Inner <>, Group 3: Inner []
 			/|/,
-			/\\[! . | { } $ > < ^ g]/,           // Single-character escaped macros like \!
+			/(\\[! . | { } $ > < ^ g])/,               // Group 4: Single-char escape
 			/|/,
-			/<br>/                               // Literal HTML-style line breaks
-		].map(regex => regex.source).join(''), 'g'); // Joins patterns + global 'g' flag
-		
+			/(<br>)/                                   // Group 5: Line breaks
+		].map(regex => regex.source).join(''), 'g');
+
 		let match;
 
 		while ((match = macroRegex.exec(text))) {
-			const startPos = activeEditor.document.positionAt(match.index);
-			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
-			const decoration = { range: new vscode.Range(startPos, endPos) };
-			decorations.push(decoration);
+			const fullMatchStr = match[0];
+			const startIdx = match.index;
+
+			const innerAngleText = match[2]; 
+			const innerSquareText = match[3];
+
+			// --- BRANCH 1: MACROS WITH PARAMETERS ---
+			if (innerAngleText !== undefined || innerSquareText !== undefined) {
+				const isAngle = innerAngleText !== undefined;
+				const openBracket = isAngle ? '<' : '[';
+				const closeBracket = isAngle ? '>' : ']';
+
+				const openBracketIdx = startIdx + fullMatchStr.indexOf(openBracket);
+				const closeBracketIdx = startIdx + fullMatchStr.lastIndexOf(closeBracket);
+
+				// 1. Unbroken container box spanning the entire parameter macro block
+				const boxRange = new vscode.Range(
+					activeEditor.document.positionAt(startIdx),
+					activeEditor.document.positionAt(startIdx + fullMatchStr.length)
+				);
+				boxDecorations.push({ range: boxRange });
+
+				// 2. Prefix and opening bracket text color range (\fn< or \c[)
+				const prefixRange = new vscode.Range(
+					activeEditor.document.positionAt(startIdx),
+					activeEditor.document.positionAt(openBracketIdx + 1)
+				);
+				macroTextDecorations.push({ range: prefixRange });
+
+				// 3. Pure inner parameters text color range (inside brackets)
+				const innerRange = new vscode.Range(
+					activeEditor.document.positionAt(openBracketIdx + 1),
+					activeEditor.document.positionAt(closeBracketIdx)
+				);
+				innerTextDecorations.push({ range: innerRange });
+
+				// 4. Closing bracket text color range explicitly (>] or ])
+				const suffixRange = new vscode.Range(
+					activeEditor.document.positionAt(closeBracketIdx),
+					activeEditor.document.positionAt(closeBracketIdx + 1)
+				);
+				macroTextDecorations.push({ range: suffixRange });
+
+			// --- BRANCH 2: SIMPLE PARAMETERLESS MACROS (\!, <br>) ---
+			} else {
+				const simpleRange = new vscode.Range(
+					activeEditor.document.positionAt(startIdx),
+					activeEditor.document.positionAt(startIdx + fullMatchStr.length)
+				);
+				// Routed to its own decoration configuration array entirely
+				simpleMacroDecorations.push({ range: simpleRange });
+			}
 		}
 
-		// Paint the chunks directly onto the editor canvas
-		activeEditor.setDecorations(macroDecorationType, decorations);
+		// Paint all unique decorator targets onto the active canvas view
+		activeEditor.setDecorations(macroBoxDecorationType, boxDecorations);
+		activeEditor.setDecorations(macroTextDecorationType, macroTextDecorations);
+		activeEditor.setDecorations(innerTextDecorationType, innerTextDecorations);
+		activeEditor.setDecorations(simpleMacroDecorationType, simpleMacroDecorations);
 	}
 
 	// Trigger update on launch, switching tabs, or typing text
