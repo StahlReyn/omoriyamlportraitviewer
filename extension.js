@@ -17,20 +17,25 @@ const fallbackDoc = {
 	source: 'Unknown'
 }
 
+let portraitPath = ""
+
 function activate(context) {
-	try {
-        // Build an absolute file path
-        const docFilePath = path.join(context.extensionPath, 'macro-docs.json');
-        const docContentRaw = fs.readFileSync(docFilePath, 'utf8');
-        macroDocs = JSON.parse(docContentRaw);
-    } catch (error) {
-        console.error("Failed loading macro-docs.json asset layer:", error);
-        macroDocs = {}; // Fallback to avoid crashing
-    }
+	const config = vscode.workspace.getConfiguration('myCoolExtension');
+	const enableMacroHighlight = config.get('enableMacroHighlight', true);
+	const enablePortraitPreview = config.get('enablePortraitPreview', true);
+	portraitPath = config.get('portraitPath', "../../img/faces/");
 
-	// Highlight color
-	processHighlight(context)
+	if (enableMacroHighlight) {
+		getMacroDocs(context);
+		processHighlight(context);
+	}
 
+	if (enablePortraitPreview) {
+		registerPortraitPreview(context);
+	}
+}
+
+function registerPortraitPreview(context) {
 	// Register command to open image in the editor
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.openImageYaml', (imgPath) => {
@@ -75,7 +80,7 @@ function processComment(commentText, document) {
 	const imagePath = match[1];
 	if (!imagePath) { return; }
 
-	const cleanImagePath = "../../img/faces/" + imagePath.trim() + ".png";
+	const cleanImagePath = portraitPath + imagePath.trim() + ".png";
 	const documentFolderPath = path.dirname(document.uri.fsPath);
 	let imgPath = path.join(documentFolderPath, cleanImagePath);
 
@@ -154,6 +159,18 @@ const macroTextDecorationType = vscode.window.createTextEditorDecorationType({
 const innerTextDecorationType = vscode.window.createTextEditorDecorationType({
 	color: '#FFEC73'
 });
+
+function getMacroDocs(context) {
+	try {
+		// Build an absolute file path
+		const docFilePath = path.join(context.extensionPath, 'macro-docs.json');
+		const docContentRaw = fs.readFileSync(docFilePath, 'utf8');
+		macroDocs = JSON.parse(docContentRaw);
+	} catch (error) {
+		console.error("Failed loading macro-docs.json asset layer:", error);
+		macroDocs = {}; // Fallback to avoid crashing
+	}
+}
 
 function processHighlight(context) {
 	let activeEditor = vscode.window.activeTextEditor;

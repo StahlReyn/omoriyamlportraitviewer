@@ -1,39 +1,60 @@
 {
-  "name": "omoriyamlportraitviewer",
-  "displayName": "omoriYamlPortraitViewer",
-  "description": "Displays portrait in tool tips based from yaml",
-  "version": "1.1.0",
-  "engines": {
-    "vscode": "^1.60.0"
-  },
-  "categories": [
-    "Programming Languages",
-    "Visualization",
-    "Formatters",
-    "Other"
-  ],
-  "publisher": "ReynStahl",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/StahlReyn/omoriyamlportraitviewer.git"
-  },
-  "activationEvents": [
-    "onLanguage:yaml"
-  ],
-  "main": "./extension.js",
-  "contributes": {
-    "hoverProvider": [
-      {
-        "for": [
-          "yaml"
-        ],
-        "type": "markdown"
-      }
-    ]
-  },
-  "devDependencies": {
-    "@vscode/vsce": "^2.32.0",
-    "@types/vscode": "^1.60.0"
-  }
+	"name": "omoriyamlportraitviewer",
+	"displayName": "Omori Portrait YAML Viewer",
+	"description": "Displays portrait in tool tips based from yaml",
+	"version": "1.1.0",
+	"engines": {
+		"vscode": "^1.60.0"
+	},
+	"categories": [
+		"Programming Languages",
+		"Visualization",
+		"Formatters",
+		"Other"
+	],
+	"icon": "icon.png",
+	"publisher": "ReynStahl",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/StahlReyn/omoriyamlportraitviewer.git"
+	},
+	"activationEvents": [
+		"onLanguage:yaml"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"hoverProvider": [
+			{
+				"for": [
+					"yaml"
+				],
+				"type": "markdown"
+			}
+		],
+		"configuration": {
+			"title": "Omori Portrait YAML Viewer",
+			"properties": {
+				"omoriYamlPortraitViewer.enableMacroHighlight": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enables the macro highlight feature."
+				},
+				"omoriYamlPortraitViewer.enablePortraitPreview": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enables the portrait view on highlight."
+				},
+				"omoriYamlPortraitViewer.portraitPath": {
+					"type": "string",
+					"default": "../../img/faces/",
+					"description": "The path to the faceset image folder."
+				}
+			}
+		}
+	},
+	"devDependencies": {
+		"@vscode/vsce": "^2.32.0",
+		"@types/vscode": "^1.60.0"
+	}
 }

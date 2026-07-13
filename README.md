@@ -1,4 +1,4 @@
-# omoriyamlportraitviewer README
+# Omori Portrait YAML Viewer README
 
 ## Features
 
