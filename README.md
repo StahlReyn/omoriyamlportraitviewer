@@ -2,8 +2,14 @@
 
 ## Features
 
-This extension displays the faceset image from the dialogue YAML.
-This assumes the image is at `../../img/faces/ImageName.png` path from the yaml file's location.
+Displays the faceset image from the dialogue YAML.
+*By default assumes the image is at `../../img/faces/ImageName.png` path, relative to the location of the YAML file.*
+
+![Faceset Hover Preview](images/preview1.png)
+
+Highlights commmon macros with a hover view description.
+
+![Common Macro Highlights](images/preview2.png)
 
 ## Download Instructions
 
