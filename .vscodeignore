@@ -8,3 +8,18 @@ vsc-extension-quickstart.md
 **/*.map
 **/eslint.config.mjs
 **/.vscode-test.*
+
+# Exclude specific unused production modules
+node_modules/unused-package-name/
+
+# Exclude all development dependencies (if not handled automatically)
+node_modules/.bin/
+node_modules/**/*.map
+node_modules/**/*.md
+
+# Exclude source control and configuration files
+.git/
+.vscode/
+.gitignore
+.vscodeignore
+README.md

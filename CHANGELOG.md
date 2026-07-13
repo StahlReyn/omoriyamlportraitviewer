@@ -2,8 +2,10 @@
 
 All notable changes to the "omoriyamlportraitviewer" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+## [1.1.0]
 
-## [Unreleased]
+- Added highlight features on the common macros found in YAML files.
 
-- Initial release
+## [1.0.0]
+
+- Initial release. Shows Image on Hover.
