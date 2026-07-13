@@ -10,6 +10,9 @@ let currentTooltipSize = 0;
 const tooltipSizes = [100, 200, 300, 400, 500, 0];
 
 function activate(context) {
+	// Highlight color
+	processHighlight(context)
+
 	// Register command to open image in the editor
 	context.subscriptions.push(
 		vscode.commands.registerCommand('extension.openImageYaml', (imgPath) => {
@@ -113,4 +116,56 @@ function processComment(commentText, document) {
 	}
 }
 
+function processHighlight(context) {
+	const macroDecorationType = vscode.window.createTextEditorDecorationType({
+		backgroundColor: 'rgba(255, 81, 0, 0.18)', 
+		border: '1px solid rgba(255, 140, 0, 0.4)',
+		borderRadius: '3px',
+		color: '#FFCC00'
+	});
+
+	const innerDecorationType = vscode.window.createTextEditorDecorationType({
+		color: '#00FFFF' // Inner bracket content color (e.g., Cyan)
+	});
+
+	let activeEditor = vscode.window.activeTextEditor;
+
+	function updateDecorations() {
+		if (!activeEditor || activeEditor.document.languageId !== 'yaml') {
+			return;
+		}
+
+		const text = activeEditor.document.getText();
+		const decorations = [];
+
+		// Regex matching all the variations (\!, \c[12], \fn<font>, <br>, etc.)
+		const macroRegex = new RegExp([
+			/\\[a-zA-Z%]+(?:<[^>]+>|\[[^\]]+\])/, // Tagged styles like \fn<font> or \c[12]
+			/|/,
+			/\\[! . | { } $ > < ^ g]/,           // Single-character escaped macros like \!
+			/|/,
+			/<br>/                               // Literal HTML-style line breaks
+		].map(regex => regex.source).join(''), 'g'); // Joins patterns + global 'g' flag
+		
+		let match;
+
+		while ((match = macroRegex.exec(text))) {
+			const startPos = activeEditor.document.positionAt(match.index);
+			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
+			const decoration = { range: new vscode.Range(startPos, endPos) };
+			decorations.push(decoration);
+		}
+
+		// Paint the chunks directly onto the editor canvas
+		activeEditor.setDecorations(macroDecorationType, decorations);
+	}
+
+	// Trigger update on launch, switching tabs, or typing text
+	if (activeEditor) { updateDecorations(); }
+	vscode.window.onDidChangeActiveTextEditor(editor => { activeEditor = editor; updateDecorations(); }, null, context.subscriptions);
+	vscode.workspace.onDidChangeTextDocument(event => { if (activeEditor && event.document === activeEditor.document) { updateDecorations(); } }, null, context.subscriptions);
+}
+
 exports.activate = activate;
+
+function deactivate() { }
