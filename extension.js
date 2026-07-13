@@ -9,7 +9,21 @@ let currentTooltipSize = 0;
 // Define available tooltip sizes
 const tooltipSizes = [100, 200, 300, 400, 500, 0];
 
+// Global object to store the parsed documentation definitions
+let macroDocs = {};
+
+
 function activate(context) {
+	try {
+        // Build an absolute file path
+        const docFilePath = path.join(context.extensionPath, 'macro-docs.json');
+        const docContentRaw = fs.readFileSync(docFilePath, 'utf8');
+        macroDocs = JSON.parse(docContentRaw);
+    } catch (error) {
+        console.error("Failed loading macro-docs.json asset layer:", error);
+        macroDocs = {}; // Fallback to avoid crashing
+    }
+
 	// Highlight color
 	processHighlight(context)
 
@@ -123,18 +137,18 @@ const macroBoxDecorationType = vscode.window.createTextEditorDecorationType({
 });
 
 const simpleMacroDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(37, 100, 44, 0.12)', // Subtle green background
-    border: '1px solid rgba(0, 146, 85, 0.4)', // Dashed border
+    backgroundColor: 'rgba(37, 100, 44, 0.12)',
+    border: '1px solid rgba(0, 146, 85, 0.4)',
     borderRadius: '3px',
-    color: '#618576'                            // Green text color
+    color: '#459272'
 });
 
 const macroTextDecorationType = vscode.window.createTextEditorDecorationType({
-	color: '#966E00'
+	color: '#A87B00'
 });
 
 const innerTextDecorationType = vscode.window.createTextEditorDecorationType({
-	color: '#FFEE80'
+	color: '#FFEC73'
 });
 
 function processHighlight(context) {
@@ -165,40 +179,57 @@ function processHighlight(context) {
 			const fullMatchStr = match[0];
 			const startIdx = match.index;
 
+			const macroPrefix = match[1]; 
 			const innerAngleText = match[2]; 
 			const innerSquareText = match[3];
+
+			// Fetch custom documentation card based on the tag prefix or simple name
+			const docLookupKey = macroPrefix ? macroPrefix.toLowerCase() : fullMatchStr.toLowerCase();
+			const docInfo = macroDocs[docLookupKey] || { title: 'Macro Operator', desc: 'Unknown Macro.' };
 
 			// --- BRANCH 1: MACROS WITH PARAMETERS ---
 			if (innerAngleText !== undefined || innerSquareText !== undefined) {
 				const isAngle = innerAngleText !== undefined;
 				const openBracket = isAngle ? '<' : '[';
 				const closeBracket = isAngle ? '>' : ']';
+				const parameterValue = isAngle ? innerAngleText : innerSquareText;
 
 				const openBracketIdx = startIdx + fullMatchStr.indexOf(openBracket);
 				const closeBracketIdx = startIdx + fullMatchStr.lastIndexOf(closeBracket);
 
-				// 1. Unbroken container box spanning the entire parameter macro block
+				// 1. Unified outer background capsule box with full macro documentation card
 				const boxRange = new vscode.Range(
 					activeEditor.document.positionAt(startIdx),
 					activeEditor.document.positionAt(startIdx + fullMatchStr.length)
 				);
-				boxDecorations.push({ range: boxRange });
 
-				// 2. Prefix and opening bracket text color range (\fn< or \c[)
+				const unifiedHover = new vscode.MarkdownString();
+				unifiedHover.appendMarkdown(`### ${docInfo.title}\n\n`);
+				unifiedHover.appendMarkdown(`${docInfo.desc}\n\n`);
+				unifiedHover.appendMarkdown(`---\n`);
+				unifiedHover.appendMarkdown(`* **Syntax:** \`${macroPrefix}${openBracket}value${closeBracket}\`\n`);
+				unifiedHover.appendMarkdown(`* **Current Value:** \`${parameterValue}\``);
+
+				boxDecorations.push({ 
+					range: boxRange,
+					hoverMessage: unifiedHover // Tooltip applies to the entire background area
+				});
+
+				// 2. Prefix and opening bracket text style range (\fn< or \c[) - No unique hover needed
 				const prefixRange = new vscode.Range(
 					activeEditor.document.positionAt(startIdx),
 					activeEditor.document.positionAt(openBracketIdx + 1)
 				);
 				macroTextDecorations.push({ range: prefixRange });
 
-				// 3. Pure inner parameters text color range (inside brackets)
+				// 3. Isolated inner variable parameter value text style range
 				const innerRange = new vscode.Range(
 					activeEditor.document.positionAt(openBracketIdx + 1),
 					activeEditor.document.positionAt(closeBracketIdx)
 				);
 				innerTextDecorations.push({ range: innerRange });
 
-				// 4. Closing bracket text color range explicitly (>] or ])
+				// 4. Closing bracket component text style range explicitly (>] or ])
 				const suffixRange = new vscode.Range(
 					activeEditor.document.positionAt(closeBracketIdx),
 					activeEditor.document.positionAt(closeBracketIdx + 1)
@@ -211,12 +242,20 @@ function processHighlight(context) {
 					activeEditor.document.positionAt(startIdx),
 					activeEditor.document.positionAt(startIdx + fullMatchStr.length)
 				);
-				// Routed to its own decoration configuration array entirely
-				simpleMacroDecorations.push({ range: simpleRange });
+
+				const simpleHover = new vscode.MarkdownString();
+				simpleHover.appendMarkdown(`### ${docInfo.title}\n\n`);
+				simpleHover.appendMarkdown(`${docInfo.desc}\n\n`);
+				simpleHover.appendMarkdown(`---\n*Parameterless standalone macro token.*`);
+
+				simpleMacroDecorations.push({ 
+					range: simpleRange,
+					hoverMessage: simpleHover
+				});
 			}
 		}
 
-		// Paint all unique decorator targets onto the active canvas view
+		// Render channels onto canvas viewport
 		activeEditor.setDecorations(macroBoxDecorationType, boxDecorations);
 		activeEditor.setDecorations(macroTextDecorationType, macroTextDecorations);
 		activeEditor.setDecorations(innerTextDecorationType, innerTextDecorations);
