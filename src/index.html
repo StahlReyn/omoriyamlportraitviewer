@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <style>
         body { 
-            font-family: var("OMORI_GAME2", --vscode-font-family, sans-serif); 
+            font-family: "OMORI_GAME", var(--vscode-font-family, sans-serif); 
             padding: 20px; 
             color: white; 
             background-color: rgb(44, 45, 58);
@@ -23,7 +23,7 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        .dialogue-card {
+        .omobox {
             background-color: black;
             border: 4px solid white;
             outline: 2px solid black;
@@ -37,12 +37,29 @@
             color: gray;
             font-size: 0.8rem;
         }
-        .dialogue-text {
+        .card-body {
+            display: flex;
+            flex-flow: column;
+        }
+        .predialogue-box {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 8px;
+        }
+        .dialogue-box {
+            flex-grow: 1;
             font-size: 1rem;
             line-height: 1.5;
             white-space: pre-wrap;
             word-break: break-word;
-            padding: 4px 0;
+            min-height: 106px;
+        }
+        .portrait-box {
+            width: 106px;
+            height: 106px;
+            padding: 0;
         }
         .no-portrait {
             width: 106px;
@@ -72,56 +89,63 @@
             container.innerHTML = '';
 
             Object.keys(data).forEach(key => {
-                const node = data[key];
-                const card = document.createElement('div');
-                card.className = 'dialogue-card';
-
-                const faceset = node.faceset || 'None';
-                const text = node.text || '';
-                const index = node.faceindex ?? 0;
-                
-                let portraitHtml = '';
-
-                if (node.imageUri) {
-                    // Calculate the grid cell coordinates (0-indexed)
-                    const columns = 4;
-                    const size = 106;
-                    const col = index % columns;
-                    const row = Math.floor(index / columns);
-
-                    // Convert positions to negative pixel displacements for background-position shifting
-                    const posX = -(col * size);
-                    const posY = -(row * size);
-
-                    // Inject the sprite cutout container dynamically inline
-                    portraitHtml = `
-                        <div class="portrait-sprite" style="
-                            width: ${size}px; 
-                            height: ${size}px; 
-                            background-image: url('${node.imageUri}'); 
-                            background-position: ${posX}px ${posY}px;
-                            background-repeat: no-repeat;
-                            flex-shrink: 0;
-                        "></div>
-                    `;
-                } else {
-                    portraitHtml = `<div class="no-portrait">No Face</div>`;
-                }
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="msg-id">${key}</span>
-                        <div class="face-info">
-                            Face: <span class="face-name">${faceset}</span> [${index}]
-                        </div>
-                    </div>
-                    <div class="card-body" style="display: flex; gap: 16px; align-items: flex-start;">
-                        ${portraitHtml}
-                        <div class="dialogue-text" style="flex: 1; min-height: 106px;">${text}</div>
-                    </div>
-                `;
+                const card = createMessageCard(data[key], key)
                 container.appendChild(card);
             });
+        }
+
+        function createMessageCard(node, key) {
+            const card = document.createElement('div');
+            card.className = 'dialogue-card';
+
+            const faceset = node.faceset || 'None';
+            const text = node.text || '';
+            const index = node.faceindex ?? 0;
+            
+            let portraitHtml = '';
+
+            if (node.imageUri) {
+                // Calculate the grid cell coordinates (0-indexed)
+                const columns = 4;
+                const size = 106;
+                const col = index % columns;
+                const row = Math.floor(index / columns);
+
+                // Convert positions to negative pixel displacements for background-position shifting
+                const posX = -(col * size);
+                const posY = -(row * size);
+
+                // Inject the sprite cutout container dynamically inline
+                portraitHtml = `
+                    <div class="portrait-sprite" style="
+                        width: ${size}px; 
+                        height: ${size}px; 
+                        background-image: url('${node.imageUri}'); 
+                        background-position: ${posX}px ${posY}px;
+                        background-repeat: no-repeat;
+                        flex-shrink: 0;
+                    "></div>
+                `;
+            } else {
+                portraitHtml = `<div class="no-portrait">No Face</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="msg-id">${key}</span>
+                    <div class="face-info">
+                        Face: <span class="face-name">${faceset}</span> [${index}]
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="predialogue-box">
+                        <div class="name-box omobox">${"NAME"}</div>
+                        <div class="portrait-box omobox">${portraitHtml}</div>
+                    </div>
+                    <div class="dialogue-box omobox">${text}</div>
+                </div>
+            `;
+            return card;
         }
     </script>
 
