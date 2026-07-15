@@ -44,6 +44,14 @@
             word-break: break-word;
             padding: 4px 0;
         }
+        .no-portrait {
+            width: 106px;
+            height: 106px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed #666;
+        }
     </style>
 </head>
 <body>
@@ -69,31 +77,53 @@
                 card.className = 'dialogue-card';
 
                 const faceset = node.faceset || 'None';
-                const faceindex = node.faceindex !== undefined ? `[${node.faceindex}]` : '';
                 const text = node.text || '';
+                const index = node.faceindex ?? 0;
                 
-                // Generate the image HTML string if a valid URI was computed by the extension
-                const imgHtml = node.imageUri 
-                    ? `<img src="${node.imageUri}" alt="${faceset}" class="portrait-img" />` 
-                    : `<div class="no-portrait">No Image</div>`;
+                let portraitHtml = '';
+
+                if (node.imageUri) {
+                    // Calculate the grid cell coordinates (0-indexed)
+                    const columns = 4;
+                    const size = 106;
+                    const col = index % columns;
+                    const row = Math.floor(index / columns);
+
+                    // Convert positions to negative pixel displacements for background-position shifting
+                    const posX = -(col * size);
+                    const posY = -(row * size);
+
+                    // Inject the sprite cutout container dynamically inline
+                    portraitHtml = `
+                        <div class="portrait-sprite" style="
+                            width: ${size}px; 
+                            height: ${size}px; 
+                            background-image: url('${node.imageUri}'); 
+                            background-position: ${posX}px ${posY}px;
+                            background-repeat: no-repeat;
+                            flex-shrink: 0;
+                        "></div>
+                    `;
+                } else {
+                    portraitHtml = `<div class="no-portrait">No Face</div>`;
+                }
 
                 card.innerHTML = `
                     <div class="card-header">
                         <span class="msg-id">${key}</span>
                         <div class="face-info">
-                            Face: <span class="face-name">${faceset}</span> ${faceindex}
+                            Face: <span class="face-name">${faceset}</span> [${index}]
                         </div>
                     </div>
-                    <div class="card-body" style="display: flex; gap: 15px; align-items: flex-start;">
-                        <div class="portrait-container">
-                            ${imgHtml}
-                        </div>
-                        <div class="dialogue-text" style="flex: 1;">${text}</div>
+                    <div class="card-body" style="display: flex; gap: 16px; align-items: flex-start;">
+                        ${portraitHtml}
+                        <div class="dialogue-text" style="flex: 1; min-height: 106px;">${text}</div>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
     </script>
+
 </body>
 </html>
