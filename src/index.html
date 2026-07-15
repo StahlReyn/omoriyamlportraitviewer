@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: var(--vscode-font-family, sans-serif); 
+            padding: 20px; 
+            color: white; 
+            background-color: rgb(44, 45, 58);
+            margin: 0;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid white;
+            padding-bottom: 10px;
+        }
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .dialogue-card {
+            background-color: black;
+            border: 4px solid white;
+            outline: 2px solid black;
+            padding: 8px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            color: gray;
+            font-size: 0.8rem;
+        }
+        .dialogue-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dialogue Preview</h1>
+    <div id="flow" class="flow-container"></div>
+
+    <script>
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'load') {
+                renderFlow(message.data || {});
+            }
+        });
+
+        function renderFlow(data) {
+            const container = document.getElementById('flow');
+            container.innerHTML = '';
+
+            const keys = Object.keys(data);
+            if (keys.length === 0) {
+                container.innerHTML = '<div style="text-align:center; opacity:0.5; font-style:italic;">No dialogue nodes found in this file.</div>';
+                return;
+            }
+
+            keys.forEach(key => {
+                const node = data[key];
+                const card = document.createElement('div');
+                card.className = 'dialogue-card';
+
+                // Safely format variables to handle empty entries smoothly
+                const faceset = node.faceset || 'None';
+                const faceindex = node.faceindex !== undefined ? `[${node.faceindex}]` : '';
+                const text = node.text || '';
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="msg-id">${key}</span>
+                        <div class="face-info">
+                            Face: <span class="face-name">${faceset}</span> ${faceindex}
+                        </div>
+                    </div>
+                    <div class="dialogue-text">${text}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
