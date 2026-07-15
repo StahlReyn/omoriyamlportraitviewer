@@ -46,20 +46,21 @@ const macroRegex = new RegExp([
     /(<br>)/                                   // Group 5: Line breaks
 ].map(regex => regex.source).join(''), 'g');
 
-export function getMacroDocs(context: vscode.ExtensionContext) {
+export function getMacroDocs(context: vscode.ExtensionContext): Record<string, MacroInfo> {
 	try {
 		// Build an absolute file path
 		const docFilePath = path.join(context.extensionPath, 'src/macro_docs.json');
 		const docContentRaw = fs.readFileSync(docFilePath, 'utf8');
-		macroDocs = JSON.parse(docContentRaw);
+		return JSON.parse(docContentRaw);
 	} catch (error) {
 		console.error("Failed loading macro_docs.json asset layer:", error);
-		macroDocs = {}; // Fallback to avoid crashing
+		return {}; // Fallback to avoid crashing
 	}
 }
 
-export function processHighlight(context: vscode.ExtensionContext) {
+export function processHighlight(context: vscode.ExtensionContext, refMacroDocs: Record<string, MacroInfo>) {
 	let activeEditor = vscode.window.activeTextEditor;
+    macroDocs = refMacroDocs;
 
 	// Trigger update on launch, switching tabs, or typing text
 	if (activeEditor) { updateDecorations(activeEditor); }

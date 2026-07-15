@@ -6,14 +6,25 @@ import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 
+let macroDocs = {};
+
+let macroRegex = new RegExp("", 'g');
+
+function setMacroRegex(macroDocs) {
+    const macroKeys = Object.keys(macroDocs);
+    const escapedKeys = macroKeys.map(key => key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+    macroRegex = new RegExp(escapedKeys.join('|'), 'gi');
+}
+
 function activate(context: vscode.ExtensionContext) {
 	const config = vscode.workspace.getConfiguration('myCoolExtension');
 	const enableMacroHighlight = config.get('enableMacroHighlight', true);
 	const enablePortraitPreview = config.get('enablePortraitPreview', true);
 	
+    macroDocs = getMacroDocs(context);
+    setMacroRegex(macroDocs);
 	if (enableMacroHighlight) {
-		getMacroDocs(context);
-		processHighlight(context);
+		processHighlight(context, macroDocs);
 	}
 	
 	if (enablePortraitPreview) {
@@ -53,6 +64,7 @@ function activate(context: vscode.ExtensionContext) {
         // Process nodes to attach valid Webview Image URIs
         const processedData = Object.keys(yamlData).reduce((acc: any, key) => {
             const node = yamlData[key];
+            node.name = ""
             let webviewImgUri = '';
 
             if (node.faceset) {
@@ -62,6 +74,19 @@ function activate(context: vscode.ExtensionContext) {
                     const fileUri = vscode.Uri.file(imgAbsolutePath);
                     webviewImgUri = panel.webview.asWebviewUri(fileUri).toString();
                 }
+            }
+
+            // For now always strip macro
+            let name_match = node.text.match(/\\n<(.+)>/)
+            if (name_match) { // Match 0 is whole, 1 is capture
+                node.name = name_match[1]
+            }
+            
+            node.text = node.text.replace("<br>", "\n");
+            // Hardcode remove macro with variable for now
+            node.text = node.text.replace(/\\((?:c)|(?:com)|(?:sinv)|(?:sinh)|(?:quake))\[[^\]]*\]/gi, "");
+            if (node.text && macroDocs) {
+                node.text = node.text.replace(macroRegex, "");
             }
 
             acc[key] = {

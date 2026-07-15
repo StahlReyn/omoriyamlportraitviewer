@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        html {
+            /* font-size: var(--vscode-editor-font-size, 16px); */
+            font-size: 28px;
+        }
         body { 
-            font-family: "OMORI_GAME", var(--vscode-font-family, sans-serif); 
+            font-family: "OMORI_GAME", var(--vscode-font-family, sans-serif);
+            font-size: 1rem;
             padding: 20px; 
             color: white; 
             background-color: rgb(44, 45, 58);
@@ -27,14 +32,14 @@
             background-color: black;
             border: 4px solid white;
             outline: 2px solid black;
-            padding: 8px;
+            padding: 6px 14px;
         }
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
-            color: gray;
+            color: rgb(89, 119, 146);
             font-size: 0.8rem;
         }
         .card-body {
@@ -51,7 +56,7 @@
         .dialogue-box {
             flex-grow: 1;
             font-size: 1rem;
-            line-height: 1.5;
+            line-height: 1.25;
             white-space: pre-wrap;
             word-break: break-word;
             min-height: 106px;
@@ -60,14 +65,6 @@
             width: 106px;
             height: 106px;
             padding: 0;
-        }
-        .no-portrait {
-            width: 106px;
-            height: 106px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px dashed #666;
         }
     </style>
 </head>
@@ -126,8 +123,6 @@
                         flex-shrink: 0;
                     "></div>
                 `;
-            } else {
-                portraitHtml = `<div class="no-portrait">No Face</div>`;
             }
 
             card.innerHTML = `
@@ -139,8 +134,9 @@
                 </div>
                 <div class="card-body">
                     <div class="predialogue-box">
-                        <div class="name-box omobox">${"NAME"}</div>
-                        <div class="portrait-box omobox">${portraitHtml}</div>
+                        ${node.name ? `<div class="name-box omobox">${node.name}</div>` : ''}
+                        <div style="flex-grow: 1;"></div>
+                        ${portraitHtml ? `<div class="portrait-box omobox">${portraitHtml}</div>` : ''}
                     </div>
                     <div class="dialogue-box omobox">${text}</div>
                 </div>
