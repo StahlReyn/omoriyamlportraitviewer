@@ -107,7 +107,7 @@ function activate(context: vscode.ExtensionContext) {
 }
 
 function getWebviewContent(context) {
-	const htmlPath = vscode.Uri.joinPath(context.extensionUri, 'src', 'index.html');
+	const htmlPath = vscode.Uri.joinPath(context.extensionUri, 'data', 'index.html');
     return fs.readFileSync(htmlPath.fsPath, 'utf8');
 }
 

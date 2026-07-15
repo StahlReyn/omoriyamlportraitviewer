@@ -49,7 +49,7 @@ const macroRegex = new RegExp([
 export function getMacroDocs(context: vscode.ExtensionContext): Record<string, MacroInfo> {
 	try {
 		// Build an absolute file path
-		const docFilePath = path.join(context.extensionPath, 'src/macro_docs.json');
+		const docFilePath = path.join(context.extensionPath, 'data/macro_docs.json');
 		const docContentRaw = fs.readFileSync(docFilePath, 'utf8');
 		return JSON.parse(docContentRaw);
 	} catch (error) {
