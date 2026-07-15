@@ -4,7 +4,7 @@
 	"description": "Displays portrait in tool tips based from yaml",
 	"version": "1.1.1",
 	"engines": {
-		"vscode": "^1.60.0"
+		"vscode": "^1.125.0"
 	},
 	"categories": [
 		"Programming Languages",

@@ -24,3 +24,4 @@ node_modules/**/*.md
 .vscodeignore
 README.md
 images/**
+src/**

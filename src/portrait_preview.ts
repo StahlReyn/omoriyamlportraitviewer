@@ -61,50 +61,47 @@ function processComment(commentText: string, document: vscode.TextDocument, port
     } catch (error) {
         imgExists = false;
     }
+    
+    let hoverContent = [
+        '## Portrait Preview',
+        '',
+        `Could not find image file.`,
+        '---',
+        `Path: \`${imgPath}\``,
+    ].join('\n');
 
     if (imgExists) {
         const imgUri = vscode.Uri.file(imgPath).toString();
 
-        // Generate size adjustment links
-        const sizeLinks = tooltipSizes.map(size =>
-        {
-            const displaySize = size === 0 ? 'No Scale' : `${size}px`;
-            if (size === currentTooltipSize) {
-                return `**[${displaySize}](command:extension.resizeImageYaml?${encodeURIComponent(JSON.stringify({ imgPath, size }))})**`;
-            }
-
-            return `[${displaySize}](command:extension.resizeImageYaml?${encodeURIComponent(JSON.stringify({ imgPath, size }))})`;
-
-        }).join(' ');
-
-        // Construct the hover content
-        const hoverContent = [
+        hoverContent = [
             '## Portrait Preview',
             '',
             `[Open Image in IDE](command:extension.openImageYaml?${encodeURIComponent(JSON.stringify(imgPath))})`,
             '',
-            sizeLinks,
-            '',
+            getSizeLinks(imgPath),
+            '---',
             currentTooltipSize === 0
                 ? `![Image](${imgUri})`
                 : `![Image](${imgUri}|width=${currentTooltipSize}px)`,
         ].join('\n');
-
-        // Create and return the hover object
-        const markdown = new vscode.MarkdownString(hoverContent, true);
-        markdown.isTrusted = true;
-        return new vscode.Hover(markdown);
-    } else {
-        // If the image does not exist, display an error message
-        const hoverContent = [
-            '## Portrait Preview',
-            `Could not find image file.`,
-            '',
-            `Path: \`${imgPath}\``,
-        ].join('\n');
-
-        const markdown = new vscode.MarkdownString(hoverContent, true);
-        markdown.isTrusted = true;
-        return new vscode.Hover(markdown);
     }
+
+    const markdown = new vscode.MarkdownString(hoverContent, true);
+    markdown.isTrusted = true;
+    return new vscode.Hover(markdown);
 }
+
+function getSizeLinks(imgPath) {
+    return tooltipSizes.map(size => {
+        const displaySize = size === 0 ? 'No Scale' : `${size}px`;
+        let output = `[${displaySize}](command:extension.resizeImageYaml?${encodeURIComponent(JSON.stringify({ imgPath, size }))})`
+        if (size === currentTooltipSize)
+            return `**${output}**`; // Bold on current
+        return output;
+    }).join(' ');
+}
+
+export function displayPortrait(context: vscode.ExtensionContext, path: string) {
+
+}
+
