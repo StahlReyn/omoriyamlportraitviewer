@@ -4,6 +4,7 @@ import { registerPortraitPreview } from './portrait_preview';
 import * as vscode from 'vscode';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
+import * as path from 'path';
 
 function activate(context: vscode.ExtensionContext) {
 	const config = vscode.workspace.getConfiguration('myCoolExtension');
@@ -20,41 +21,61 @@ function activate(context: vscode.ExtensionContext) {
 		registerPortraitPreview(context, portraitPath);
 	}
 
-    let disposable = vscode.commands.registerCommand('extension.openEditor', () => {
+    let disposable = vscode.commands.registerCommand('extension.openPreview', () => {
         const activeEditor = vscode.window.activeTextEditor;
-        if (!activeEditor) {
-            vscode.window.showErrorMessage('No active file found. Open a dialogue YAML file first.');
-            return;
-        }
+        if (!activeEditor) return;
 
         const document = activeEditor.document;
-        if (document.languageId !== 'yaml' && !document.fileName.endsWith('.yaml') && !document.fileName.endsWith('.yml')) {
-            vscode.window.showErrorMessage('Active document is not a YAML file.');
-            return;
-        }
-
         const filePath = document.fileName;
-        const fileContents = document.getText(); // Reads text directly from the editor buffer
+        const fileDir = path.dirname(filePath);
 
         let yamlData: any;
         try {
-            yamlData = yaml.load(fileContents) || {};
+            yamlData = yaml.load(document.getText()) || {};
         } catch (e) {
-            vscode.window.showErrorMessage(`Failed to parse YAML: ${e}`);
+            vscode.window.showErrorMessage(`YAML Parse Error: ${e}`);
             return;
         }
 
-        // Create the panel
         const panel = vscode.window.createWebviewPanel(
-            'dialogueYaml',
-            `Preview: ${vscode.workspace.asRelativePath(filePath)}`,
-            vscode.ViewColumn.One,
-            { enableScripts: true, retainContextWhenHidden: true }
+            'dialoguePreview',
+            `Preview: ${path.basename(filePath)}`,
+            vscode.ViewColumn.Two,
+            { 
+                enableScripts: true,
+                // Crucial: Allow the webview to read assets from your image directory
+                localResourceRoots: [
+                    vscode.Uri.file(path.join(fileDir, '../../img/faces'))
+                ]
+            }
         );
 
-        // Send the initial data to the Webview
+        // Process nodes to attach valid Webview Image URIs
+        const processedData = Object.keys(yamlData).reduce((acc: any, key) => {
+            const node = yamlData[key];
+            let webviewImgUri = '';
+
+            if (node.faceset) {
+                const imgAbsolutePath = path.resolve(fileDir, '../../img/faces', `${node.faceset}.png`);
+
+                if (fs.existsSync(imgAbsolutePath)) {
+                    const fileUri = vscode.Uri.file(imgAbsolutePath);
+                    webviewImgUri = panel.webview.asWebviewUri(fileUri).toString();
+                }
+            }
+
+            acc[key] = {
+                ...node,
+                imageUri: webviewImgUri // Hand off the authorized URI to the HTML
+            };
+            return acc;
+        }, {});
+
+
         panel.webview.html = getWebviewContent(context);
-        panel.webview.postMessage({ command: 'load', data: yamlData });
+
+        // Post the processed data to HTML
+        panel.webview.postMessage({ command: 'load', data: processedData });
     });
 
     context.subscriptions.push(disposable);

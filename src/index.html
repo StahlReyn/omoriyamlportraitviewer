@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <style>
         body { 
-            font-family: var(--vscode-font-family, sans-serif); 
+            font-family: var("OMORI_GAME2", --vscode-font-family, sans-serif); 
             padding: 20px; 
             color: white; 
             background-color: rgb(44, 45, 58);
@@ -33,9 +33,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
             color: gray;
             font-size: 0.8rem;
         }
@@ -65,21 +63,19 @@
             const container = document.getElementById('flow');
             container.innerHTML = '';
 
-            const keys = Object.keys(data);
-            if (keys.length === 0) {
-                container.innerHTML = '<div style="text-align:center; opacity:0.5; font-style:italic;">No dialogue nodes found in this file.</div>';
-                return;
-            }
-
-            keys.forEach(key => {
+            Object.keys(data).forEach(key => {
                 const node = data[key];
                 const card = document.createElement('div');
                 card.className = 'dialogue-card';
 
-                // Safely format variables to handle empty entries smoothly
                 const faceset = node.faceset || 'None';
                 const faceindex = node.faceindex !== undefined ? `[${node.faceindex}]` : '';
                 const text = node.text || '';
+                
+                // Generate the image HTML string if a valid URI was computed by the extension
+                const imgHtml = node.imageUri 
+                    ? `<img src="${node.imageUri}" alt="${faceset}" class="portrait-img" />` 
+                    : `<div class="no-portrait">No Image</div>`;
 
                 card.innerHTML = `
                     <div class="card-header">
@@ -88,7 +84,12 @@
                             Face: <span class="face-name">${faceset}</span> ${faceindex}
                         </div>
                     </div>
-                    <div class="dialogue-text">${text}</div>
+                    <div class="card-body" style="display: flex; gap: 15px; align-items: flex-start;">
+                        <div class="portrait-container">
+                            ${imgHtml}
+                        </div>
+                        <div class="dialogue-text" style="flex: 1;">${text}</div>
+                    </div>
                 `;
                 container.appendChild(card);
             });

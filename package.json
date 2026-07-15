@@ -54,7 +54,7 @@
 		},
 		"commands": [
 			{
-				"command": "extension.openEditor",
+				"command": "extension.openPreview",
 				"title": "Opens Dialogue Preview",
 				"category": "Preview"
 			}
