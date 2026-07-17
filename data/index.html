@@ -66,6 +66,12 @@
             height: 106px;
             padding: 0;
         }
+        .portrait-sprite {
+            width: 106px;
+            height: 106px;
+            background-repeat: no-repeat;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -74,77 +80,146 @@
     <div id="flow" class="flow-container"></div>
 
     <script>
+        const vscode = acquireVsCodeApi();
+
         window.addEventListener('message', event => {
             const message = event.data;
-            if (message.command === 'load') {
-                renderFlow(message.data || {});
-            } else if (message.command === 'update') {
+            if (message.command === 'load' || message.command === 'update') {
                 renderFlow(message.data || {});
             }
         });
 
+        // Notify the extension that the script engine is ready to accept commands
+        vscode.postMessage({ command: 'ready' });
+
         function renderFlow(data) {
             const container = document.getElementById('flow');
-            container.innerHTML = '';
+            const incomingKeys = Object.keys(data);
 
-            Object.keys(data).forEach(key => {
-                const card = createMessageCard(data[key], key)
-                container.appendChild(card);
+            // Quick debug sanity check
+            console.log("Received Data Type:", Array.isArray(data) ? "Array" : typeof data);
+            console.log("Incoming Keys:", Object.keys(data));
+
+            // Insert or Update, get existing if exists
+            incomingKeys.forEach(key => {
+                const node = data[key];
+                let card = document.getElementById(`msg-${key}`);
+
+                if (card) {
+                    updateMessageCard(card, node, key);
+                } else {
+                    card = createMessageCard(node, key);
+                    container.appendChild(card);
+                }
+            });
+
+            // Delete if new version does not have
+            const currentCardElements = Array.from(container.children);
+            currentCardElements.forEach(cardElement => {
+                const originalKey = cardElement.id.replace('msg-', '');
+                if (!data[originalKey]) {
+                    cardElement.remove();
+                }
             });
         }
 
         function createMessageCard(node, key) {
             const card = document.createElement('div');
             card.className = 'dialogue-card';
-            card.id = "msg-" + key;
+            card.id = `msg-${key}`;
 
-            const faceset = node.faceset || 'None';
-            const text = node.text || '';
-            const index = node.faceindex ?? 0;
-            
-            let portraitHtml = '';
-
-            if (node.imageUri) {
-                // Calculate the grid cell coordinates (0-indexed)
-                const columns = 4;
-                const size = 106;
-                const col = index % columns;
-                const row = Math.floor(index / columns);
-
-                // Convert positions to negative pixel displacements for background-position shifting
-                const posX = -(col * size);
-                const posY = -(row * size);
-
-                // Inject the sprite cutout container dynamically inline
-                portraitHtml = `
-                    <div class="portrait-sprite" style="
-                        width: ${size}px; 
-                        height: ${size}px; 
-                        background-image: url('${node.imageUri}'); 
-                        background-position: ${posX}px ${posY}px;
-                        background-repeat: no-repeat;
-                        flex-shrink: 0;
-                    "></div>
-                `;
-            }
-
+            // Skeleton frame structure
             card.innerHTML = `
                 <div class="card-header">
-                    <span class="msg-id">${key}</span>
-                    <div class="face-info">
-                        Face: <span class="face-name">${faceset}</span> [${index}]
-                    </div>
+                    <span class="msg-id"></span>
+                    <div class="face-info"></div>
                 </div>
                 <div class="card-body">
                     <div class="predialogue-box">
-                        ${node.name ? `<div class="name-box omobox">${node.name}</div>` : ''}
                         <div style="flex-grow: 1;"></div>
-                        ${portraitHtml ? `<div class="portrait-box omobox">${portraitHtml}</div>` : ''}
                     </div>
-                    <div class="dialogue-box omobox">${text}</div>
+                    <div class="dialogue-box omobox"></div>
                 </div>
             `;
+
+            // Moved to populate the template fields by update
+            updateMessageCard(card, node, key);
+            
             return card;
+        }
+
+        function updateMessageCard(card, node, key) {
+            const faceset = node.faceset || 'None';
+            const text = node.text || '';
+            const index = node.faceindex ?? 0;
+
+            // Grab the template elements
+            const msgIdSpan = card.querySelector('.msg-id');
+            const faceNameSpan = card.querySelector('.face-name');
+            const faceInfoDiv = card.querySelector('.face-info');
+
+            if (msgIdSpan && msgIdSpan.innerText !== key) msgIdSpan.innerText = key;
+            if (faceNameSpan && faceNameSpan.innerText !== faceset) faceNameSpan.innerText = faceset;
+            if (faceInfoDiv) {
+                faceInfoDiv.innerHTML = `Face: <span class="face-name">${faceset}</span> [${index}]`;
+            }
+
+            // Name Container Box
+            const preDialogueBox = card.querySelector('.predialogue-box');
+            if (preDialogueBox) {
+                let nameBox = preDialogueBox.querySelector('.name-box');
+                if (node.name) {
+                    if (!nameBox) {
+                        nameBox = document.createElement('div');
+                        nameBox.className = 'name-box omobox';
+                        preDialogueBox.insertBefore(nameBox, preDialogueBox.firstChild);
+                    }
+                    if (nameBox.innerText !== node.name) nameBox.innerText = node.name;
+                } else if (nameBox) {
+                    nameBox.remove();
+                }
+            }
+
+            // Portrait Sprites
+            if (preDialogueBox) {
+                let portraitBox = preDialogueBox.querySelector('.portrait-box');
+                
+                if (node.imageUri) {
+                    if (!portraitBox) {
+                        portraitBox = document.createElement('div');
+                        portraitBox.className = 'portrait-box omobox';
+                        preDialogueBox.appendChild(portraitBox);
+                    }
+
+                    let sprite = portraitBox.querySelector('.portrait-sprite');
+                    if (!sprite) {
+                        sprite = document.createElement('div');
+                        sprite.className = 'portrait-sprite';
+                        portraitBox.appendChild(sprite);
+                    }
+
+                    // Set image and shift offset to display
+                    const columns = 4;
+                    const size = 106;
+                    const posX = -( (index % columns) * size );
+                    const posY = -( Math.floor(index / columns) * size );
+
+                    const targetBgImage = `url("${node.imageUri}")`;
+                    const targetBgPos = `${posX}px ${posY}px`;
+
+                    // Only modify layout properties if values actually shifted
+                    if (sprite.style.backgroundImage !== targetBgImage) sprite.style.backgroundImage = targetBgImage;
+                    if (sprite.style.backgroundPosition !== targetBgPos) sprite.style.backgroundPosition = targetBgPos;
+                } else if (portraitBox) {
+                    portraitBox.remove();
+                }
+            }
+
+            // 4. Synchronize Main Dialogue Text Body
+            const dialogueBox = card.querySelector('.dialogue-box');
+            if (dialogueBox && dialogueBox.innerText !== text) {
+                dialogueBox.innerText = text;
+            }
         }
     </script>
 

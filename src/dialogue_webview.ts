@@ -24,18 +24,18 @@ export class DialogueWebviewManager {
     
     public registerPortraitWebView(context: vscode.ExtensionContext) {
         let openPreviewCmd = vscode.commands.registerCommand('extension.openPreview', () => this.openDialogueWebview(context));
-        let saveListener = vscode.workspace.onDidSaveTextDocument(this.updateWebview);
+        let saveListener = vscode.workspace.onDidSaveTextDocument((document) => this.updateWebview(document));
         context.subscriptions.push(openPreviewCmd, saveListener);
     }
 
     private updateWebview(document: vscode.TextDocument) {
         if (!(document.languageId === 'yaml' || document.languageId === 'yml')) return;
         if (!this.panel) return;
-
+        vscode.window.showInformationMessage("Updated Preview for " + path.basename(document.fileName));
         const fileDir = path.dirname(document.fileName);
         const imgPath = path.join(fileDir, this.imgPath);
         const processedData = this.getDocumentData(this.panel, document, imgPath)
-        this.panel.webview.postMessage({ command: 'update', text: processedData });
+        this.panel.webview.postMessage({ command: 'update', data: processedData });
     }
     
     private openDialogueWebview(context: vscode.ExtensionContext) {
@@ -57,9 +57,15 @@ export class DialogueWebviewManager {
                 localResourceRoots: [vscode.Uri.file(imgPath)]
             }
         );
-        const processedData = this.getDocumentData(this.panel, document, imgPath)
         this.panel.webview.html = this.getWebviewContent(context);
-        this.panel.webview.postMessage({ command: 'load', data: processedData });
+        
+        // Listen for a 'ready' signal from the webview before sending the data payload
+        this.panel.webview.onDidReceiveMessage(message => {
+            if (message.command === 'ready') {
+                const processedData = this.getDocumentData(this.panel!, document, imgPath);
+                this.panel!.webview.postMessage({ command: 'load', data: processedData });
+            }
+        }, null, context.subscriptions);
     }
 
     private cleanDialogueText(text: string) {
