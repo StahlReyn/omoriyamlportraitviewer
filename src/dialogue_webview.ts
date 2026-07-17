@@ -8,6 +8,7 @@ export class DialogueWebviewManager {
     private macroRegex = new RegExp("", 'g');
     private imgPath = "../../img/faces"
     private macroDocs: MacroDocs = {}
+    private panel: vscode.WebviewPanel | null = null;
 
     public constructor(imgPath: string, macroDocs: MacroDocs) {
         this.imgPath = imgPath;
@@ -22,8 +23,19 @@ export class DialogueWebviewManager {
     }
     
     public registerPortraitWebView(context: vscode.ExtensionContext) {
-        let disposable = vscode.commands.registerCommand('extension.openPreview', () => this.openDialogueWebview(context));
-        context.subscriptions.push(disposable);
+        let openPreviewCmd = vscode.commands.registerCommand('extension.openPreview', () => this.openDialogueWebview(context));
+        let saveListener = vscode.workspace.onDidSaveTextDocument(this.updateWebview);
+        context.subscriptions.push(openPreviewCmd, saveListener);
+    }
+
+    private updateWebview(document: vscode.TextDocument) {
+        if (!(document.languageId === 'yaml' || document.languageId === 'yml')) return;
+        if (!this.panel) return;
+
+        const fileDir = path.dirname(document.fileName);
+        const imgPath = path.join(fileDir, this.imgPath);
+        const processedData = this.getDocumentData(this.panel, document, imgPath)
+        this.panel.webview.postMessage({ command: 'update', text: processedData });
     }
     
     private openDialogueWebview(context: vscode.ExtensionContext) {
@@ -33,7 +45,35 @@ export class DialogueWebviewManager {
         const document = activeEditor.document;
         const filePath = document.fileName;
         const fileDir = path.dirname(filePath);
-    
+        const imgPath = path.join(fileDir, this.imgPath);
+        
+        this.panel = vscode.window.createWebviewPanel(
+            'dialoguePreview',
+            `Preview: ${path.basename(filePath)}`,
+            vscode.ViewColumn.Two,
+            { 
+                enableScripts: true,
+                // Crucial: Allow the webview to read assets from your image directory
+                localResourceRoots: [vscode.Uri.file(imgPath)]
+            }
+        );
+        const processedData = this.getDocumentData(this.panel, document, imgPath)
+        this.panel.webview.html = this.getWebviewContent(context);
+        this.panel.webview.postMessage({ command: 'load', data: processedData });
+    }
+
+    private cleanDialogueText(text: string) {
+        if (!text) return text;
+        text = text.replace("<br>", "\n");
+        // Hardcode remove macro with variable for now
+        text = text.replace(/\\((?:c)|(?:com)|(?:sinv)|(?:sinh)|(?:quake))\[[^\]]*\]/gi, "");
+        if (this.macroDocs) {
+            text = text.replace(this.macroRegex, "");
+        }
+        return text;
+    }
+
+    private getDocumentData(panel: vscode.WebviewPanel, document: vscode.TextDocument, imgPath: string) {
         let yamlData: any;
         try {
             yamlData = yaml.load(document.getText()) || {};
@@ -41,28 +81,18 @@ export class DialogueWebviewManager {
             vscode.window.showErrorMessage(`YAML Parse Error: ${e}`);
             return;
         }
-    
-        const panel = vscode.window.createWebviewPanel(
-            'dialoguePreview',
-            `Preview: ${path.basename(filePath)}`,
-            vscode.ViewColumn.Two,
-            { 
-                enableScripts: true,
-                // Crucial: Allow the webview to read assets from your image directory
-                localResourceRoots: [
-                    vscode.Uri.file(path.join(fileDir, this.imgPath))
-                ]
-            }
-        );
-    
-        // Process nodes to attach valid Webview Image URIs
-        const processedData = Object.keys(yamlData).reduce((acc: any, key) => {
+        return this.processYamlData(panel, yamlData, imgPath);
+    }
+
+    // Process nodes to attach valid Webview Image URIs
+    private processYamlData(panel: vscode.WebviewPanel, yamlData: any, imgPath: string) {
+        return Object.keys(yamlData).reduce((acc: any, key) => {
             const node = yamlData[key];
             node.name = ""
             let webviewImgUri = '';
     
             if (node.faceset) {
-                const imgAbsolutePath = path.resolve(fileDir, this.imgPath, `${node.faceset}.png`);
+                const imgAbsolutePath = path.resolve(imgPath, `${node.faceset}.png`);
     
                 if (fs.existsSync(imgAbsolutePath)) {
                     const fileUri = vscode.Uri.file(imgAbsolutePath);
@@ -76,12 +106,7 @@ export class DialogueWebviewManager {
                 node.name = name_match[1]
             }
             
-            node.text = node.text.replace("<br>", "\n");
-            // Hardcode remove macro with variable for now
-            node.text = node.text.replace(/\\((?:c)|(?:com)|(?:sinv)|(?:sinh)|(?:quake))\[[^\]]*\]/gi, "");
-            if (node.text && this.macroDocs) {
-                node.text = node.text.replace(this.macroRegex, "");
-            }
+            node.text = this.cleanDialogueText(node.text);
     
             acc[key] = {
                 ...node,
@@ -89,12 +114,6 @@ export class DialogueWebviewManager {
             };
             return acc;
         }, {});
-    
-    
-        panel.webview.html = this.getWebviewContent(context);
-    
-        // Post the processed data to HTML
-        panel.webview.postMessage({ command: 'load', data: processedData });
     }
     
     private getWebviewContent(context: vscode.ExtensionContext) {

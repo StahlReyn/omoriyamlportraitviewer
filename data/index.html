@@ -78,6 +78,8 @@
             const message = event.data;
             if (message.command === 'load') {
                 renderFlow(message.data || {});
+            } else if (message.command === 'update') {
+                renderFlow(message.data || {});
             }
         });
 
@@ -94,6 +96,7 @@
         function createMessageCard(node, key) {
             const card = document.createElement('div');
             card.className = 'dialogue-card';
+            card.id = "msg-" + key;
 
             const faceset = node.faceset || 'None';
             const text = node.text || '';
