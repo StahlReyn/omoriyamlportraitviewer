@@ -72,6 +72,24 @@
             background-repeat: no-repeat;
             flex-shrink: 0;
         }
+
+        /* Active highlight state */
+        .dialogue-card.highlighted {
+            animation: highlightFade 1.0s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes highlightFade {
+            0% {
+                border: 4px solid #ffec70;
+                background-color: rgba(253, 255, 112, 0.3);
+            }
+            100% {
+                border: 0 solid transparent;
+                background-color: transparent;
+            }
+        }
     </style>
 </head>
 <body>
@@ -82,12 +100,63 @@
     <script>
         const vscode = acquireVsCodeApi();
 
+        // Keep track of the last rendered dataset to find differences
+        let lastDataSnapshot = null;
+
         window.addEventListener('message', event => {
             const message = event.data;
             if (message.command === 'load' || message.command === 'update') {
-                renderFlow(message.data || {});
+                const newData = message.data || {};
+                const changedKey = findChangedKey(lastDataSnapshot, newData);
+
+                renderFlow(newData);
+
+                lastDataSnapshot = JSON.parse(JSON.stringify(newData));
+                if (changedKey) {
+                    triggerCardFocus(changedKey);
+                }
             }
         });
+
+        // Helper function to find which item text, faceindex, name, etc., shifted
+        function findChangedKey(oldData, newData) {
+            if (!oldData) return null; // Ignore on initial 'load'
+
+            const newKeys = Object.keys(newData);
+            
+            for (const key of newKeys) {
+                // If the key didn't exist before, it's a newly added card
+                if (!oldData[key]) return key;
+
+                // If the contents changed, it's an edited card
+                const oldNodeStr = JSON.stringify(oldData[key]);
+                const newNodeStr = JSON.stringify(newData[key]);
+                if (oldNodeStr !== newNodeStr) {
+                    return key;
+                }
+            }
+            return null;
+        }
+
+        // Handles scrolling and cleanly applying/removing classes
+        function triggerCardFocus(key) {
+            const card = document.getElementById(`msg-${key}`);
+            if (!card) return;
+
+            // Scroll the card into the viewport
+            card.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            card.classList.remove('highlighted'); // Remove the class first in case the user saves the same card rapidly
+            void card.offsetWidth; // Restart the animation timeline
+            card.classList.add('highlighted');
+
+            setTimeout(() => {
+                card.classList.remove('highlighted');
+            }, 2000);
+        }
 
         // Notify the extension that the script engine is ready to accept commands
         vscode.postMessage({ command: 'ready' });
