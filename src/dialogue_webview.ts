@@ -73,6 +73,7 @@ export class DialogueWebviewManager {
         text = text.replace("<br>", "\n");
         // Hardcode remove macro with variable for now
         text = text.replace(/\\((?:c)|(?:com)|(?:sinv)|(?:sinh)|(?:quake))\[[^\]]*\]/gi, "");
+        text = text.replace(/\\n\<[^\>]*\>/gi, "");
         if (this.macroDocs) {
             text = text.replace(this.macroRegex, "");
         }

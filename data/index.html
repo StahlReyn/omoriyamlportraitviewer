@@ -24,8 +24,8 @@
         .flow-container {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            max-width: 800px;
+            gap: 6px;
+            max-width: 640px; /* Game screen is 640px, box has slight padding*/
             margin: 0 auto;
         }
         .omobox {
@@ -74,6 +74,11 @@
         }
 
         /* Active highlight state */
+        .dialogue-card {
+            padding: 8px;
+            border: 4px solid transparent;
+        }
+
         .dialogue-card.highlighted {
             animation: highlightFade 1.0s ease-out;
             position: relative;
@@ -82,11 +87,11 @@
 
         @keyframes highlightFade {
             0% {
-                border: 4px solid #ffec70;
-                background-color: rgba(253, 255, 112, 0.3);
+                border-color: #ffe270;
+                background-color: rgba(255, 219, 112, 0.3);
             }
             100% {
-                border: 0 solid transparent;
+                border-color: transparent;
                 background-color: transparent;
             }
         }
@@ -107,22 +112,20 @@
             const message = event.data;
             if (message.command === 'load' || message.command === 'update') {
                 const newData = message.data || {};
-                const changedKey = findChangedKey(lastDataSnapshot, newData);
+                const changedKeys = findChangedKeys(lastDataSnapshot, newData);
 
                 renderFlow(newData);
-
                 lastDataSnapshot = JSON.parse(JSON.stringify(newData));
-                if (changedKey) {
-                    triggerCardFocus(changedKey);
-                }
+                triggerCardFocus(changedKeys);
             }
         });
 
         // Helper function to find which item text, faceindex, name, etc., shifted
-        function findChangedKey(oldData, newData) {
+        function findChangedKeys(oldData, newData) {
             if (!oldData) return null; // Ignore on initial 'load'
 
             const newKeys = Object.keys(newData);
+            let output = []
             
             for (const key of newKeys) {
                 // If the key didn't exist before, it's a newly added card
@@ -132,30 +135,35 @@
                 const oldNodeStr = JSON.stringify(oldData[key]);
                 const newNodeStr = JSON.stringify(newData[key]);
                 if (oldNodeStr !== newNodeStr) {
-                    return key;
+                    output.push(key);
                 }
             }
-            return null;
+            return output;
         }
 
         // Handles scrolling and cleanly applying/removing classes
-        function triggerCardFocus(key) {
-            const card = document.getElementById(`msg-${key}`);
-            if (!card) return;
+        function triggerCardFocus(keys) {
+            if (keys.length == 0) return;
 
-            // Scroll the card into the viewport
-            card.scrollIntoView({
-                behavior: 'smooth',
+            // Scroll to first edited card
+            const firstCard = document.getElementById(`msg-${keys[0]}`);
+            firstCard.scrollIntoView({
+                behavior: 'auto',
                 block: 'center'
             });
 
-            card.classList.remove('highlighted'); // Remove the class first in case the user saves the same card rapidly
-            void card.offsetWidth; // Restart the animation timeline
-            card.classList.add('highlighted');
-
-            setTimeout(() => {
-                card.classList.remove('highlighted');
-            }, 2000);
+            for (const key of keys) {
+                const card = document.getElementById(`msg-${key}`);
+                if (!card) return;
+    
+                card.classList.remove('highlighted'); // Remove the class first in case the user saves the same card rapidly
+                void card.offsetWidth; // Restart the animation timeline
+                card.classList.add('highlighted');
+    
+                setTimeout(() => {
+                    card.classList.remove('highlighted');
+                }, 1000);
+            }
         }
 
         // Notify the extension that the script engine is ready to accept commands
@@ -201,7 +209,7 @@
             card.innerHTML = `
                 <div class="card-header">
                     <span class="msg-id"></span>
-                    <div class="face-info"></div>
+                    <div class="face-info">Face: <span class="face-name"></span> [<span class="face-index"></span>]</div>
                 </div>
                 <div class="card-body">
                     <div class="predialogue-box">
@@ -225,16 +233,17 @@
             // Grab the template elements
             const msgIdSpan = card.querySelector('.msg-id');
             const faceNameSpan = card.querySelector('.face-name');
-            const faceInfoDiv = card.querySelector('.face-info');
+            const faceIndexSpan = card.querySelector('.face-index');
+
+            const dialogueBox = card.querySelector('.dialogue-box');
+            const preDialogueBox = card.querySelector('.predialogue-box');
 
             if (msgIdSpan && msgIdSpan.innerText !== key) msgIdSpan.innerText = key;
             if (faceNameSpan && faceNameSpan.innerText !== faceset) faceNameSpan.innerText = faceset;
-            if (faceInfoDiv) {
-                faceInfoDiv.innerHTML = `Face: <span class="face-name">${faceset}</span> [${index}]`;
-            }
+            if (faceIndexSpan && faceIndexSpan.innerText !== index) faceIndexSpan.innerText = index;
+            if (dialogueBox && dialogueBox.innerText !== text) dialogueBox.innerText = text;
 
             // Name Container Box
-            const preDialogueBox = card.querySelector('.predialogue-box');
             if (preDialogueBox) {
                 let nameBox = preDialogueBox.querySelector('.name-box');
                 if (node.name) {
@@ -282,12 +291,6 @@
                 } else if (portraitBox) {
                     portraitBox.remove();
                 }
-            }
-
-            // 4. Synchronize Main Dialogue Text Body
-            const dialogueBox = card.querySelector('.dialogue-box');
-            if (dialogueBox && dialogueBox.innerText !== text) {
-                dialogueBox.innerText = text;
             }
         }
     </script>
