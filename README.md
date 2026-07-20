@@ -11,6 +11,12 @@ Highlights commmon macros with a hover view description.
 
 ![Common Macro Highlights](images/preview2.png)
 
+Display portrait in a web preview.
+
+- Type in `>Open Dialogue YAML Preview` on top bar or `Ctrl+P` while having the YAML file opened
+- Supports visual common macros such as \c[], \quake[], \sinv[], \sinh[], \fn<>
+- Still no support for name macro yet
+
 ## Download Instructions
 
 For those downloading directly, check out [this guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#packaging-extensions).
