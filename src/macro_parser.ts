@@ -5,6 +5,7 @@ interface ParserState {
     sinv: number;
     sinh: number;
     quake: number;
+    font: string;
     hasOpenTag: boolean;
     /** Emits the closing tag of the previous state and opens the new state */
     renderStateTransition(): string;
@@ -21,11 +22,11 @@ interface MacroRule {
 const rules: MacroRule[] = [
     {
         pattern: /\\\{/g,
-        action: (s) => { s.size *= 1.3; return s.renderStateTransition(); }
+        action: (s) => { s.size *= 1.5; return s.renderStateTransition(); }
     },
     {
         pattern: /\\\}/g,
-        action: (s) => { s.size /= 1.3; return s.renderStateTransition(); }
+        action: (s) => { s.size /= 1.5; return s.renderStateTransition(); }
     },
     {
         pattern: /\\c\[(\d+)\]/g, // Matches \c[x]
@@ -42,6 +43,10 @@ const rules: MacroRule[] = [
     {
         pattern: /\\quake\[(\d+)\]/g, // Matches \quake[x]
         action: (s, match) => { s.quake = parseInt(match[1]); return s.renderStateTransition(); }
+    },
+    {
+        pattern: /\\fn\<([^>]+)\>/g, // Matches \fn<x>
+        action: (s, match) => { s.font = match[1]; return s.renderStateTransition(); }
     }
 ];
 
@@ -61,6 +66,10 @@ const masterEmptyPattern = new RegExp(
 );
 
 export function parseCustomMacros(text: string): string {
+    const objToStyles = (obj) => {
+        return Object.entries(obj).map(([key, val]) => `${key}: ${val}`).join(';');
+    };
+    
     // Initial State
     const state: ParserState = {
         size: 1.0,
@@ -68,6 +77,7 @@ export function parseCustomMacros(text: string): string {
         sinh: 0,
         quake: 0,
         color: 0,
+        font: "",
         hasOpenTag: false,
         renderStateTransition() {
             const closeTag = this.hasOpenTag ? '</span>' : '';
@@ -78,11 +88,15 @@ export function parseCustomMacros(text: string): string {
             if (this.sinh != 0) classes.push("sinh");
             if (this.quake != 0) classes.push("quake");
             if (this.color != 0) classes.push("c" + this.color);
-            // console.log("Text Classes", classes);
 
-            const styles = ` style="font-size: ${this.size.toFixed(2)}em;"`;
+            let styles: object = {};
+            if (this.size != 1) styles["font-size"] = `${this.size.toFixed(2)}em`;
+            if (this.font != "") styles["font-family"] = `"${this.font}"`;
+            
+            // console.log("Text Classes", classes);
+            const styleDisplay = Object.keys(styles).length > 0 ? ` style="${objToStyles(styles)}"` : "";
             const classDisplay = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
-            return `${closeTag}<span${classDisplay}${styles}>`;
+            return `${closeTag}<span${classDisplay}${styleDisplay}>`;
         },
     };
 

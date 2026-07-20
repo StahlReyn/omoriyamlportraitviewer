@@ -24,7 +24,7 @@ export class DialogueWebviewManager {
     }
     
     public registerPortraitWebView(context: vscode.ExtensionContext) {
-        let openPreviewCmd = vscode.commands.registerCommand('extension.openPreview', () => this.openDialogueWebview(context));
+        let openPreviewCmd = vscode.commands.registerCommand('omoriYamlPortraitViewer.openPreview', () => this.openDialogueWebview(context));
         let saveListener = vscode.workspace.onDidSaveTextDocument((document) => this.updateWebview(document));
         context.subscriptions.push(openPreviewCmd, saveListener);
     }
@@ -71,7 +71,9 @@ export class DialogueWebviewManager {
 
     private cleanDialogueText(text: string) {
         if (!text) return text;
-        text = text.replace("<br>", "\n");
+        //  OPTIMIZED: Scans the string exactly once
+        const lookup = { "<br>": "\n", '\\"': '"' };
+        text = text.replaceAll(/<br>|\\"/g, match => lookup[match]);
         text = parseCustomMacros(text);
         return text;
     }

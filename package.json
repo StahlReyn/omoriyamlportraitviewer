@@ -54,9 +54,17 @@
 		},
 		"commands": [
 			{
-				"command": "extension.openPreview",
+				"command": "omoriYamlPortraitViewer.openPreview",
 				"title": "Opens Dialogue Preview",
 				"category": "Preview"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "omoriYamlPortraitViewer.openPreview",
+				"key": "ctrl+p",
+				"mac": "cmd+p",
+				"when": "editorTextFocus"
 			}
 		]
 	},
