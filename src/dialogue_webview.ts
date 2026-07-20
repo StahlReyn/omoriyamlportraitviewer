@@ -3,6 +3,7 @@ import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 import { MacroDocs } from './macro_docs';
+import { parseCustomMacros } from './macro_parser';
 
 export class DialogueWebviewManager {
     private macroRegex = new RegExp("", 'g');
@@ -71,11 +72,7 @@ export class DialogueWebviewManager {
     private cleanDialogueText(text: string) {
         if (!text) return text;
         text = text.replace("<br>", "\n");
-        // Hardcode remove macro with variable for now
-        text = text.replace(/\\((?:c)|(?:com)|(?:sinv)|(?:sinh)|(?:quake))\[[^\]]*\]/gi, "");
-        if (this.macroDocs) {
-            text = text.replace(this.macroRegex, "");
-        }
+        text = parseCustomMacros(text);
         return text;
     }
 
