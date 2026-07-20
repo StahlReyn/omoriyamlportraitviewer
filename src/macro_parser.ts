@@ -21,11 +21,11 @@ interface MacroRule {
 const rules: MacroRule[] = [
     {
         pattern: /\\\{/g,
-        action: (s) => { s.size *= 1.2; return s.renderStateTransition(); }
+        action: (s) => { s.size *= 1.3; return s.renderStateTransition(); }
     },
     {
         pattern: /\\\}/g,
-        action: (s) => { s.size /= 1.2; return s.renderStateTransition(); }
+        action: (s) => { s.size /= 1.3; return s.renderStateTransition(); }
     },
     {
         pattern: /\\c\[(\d+)\]/g, // Matches \c[x]
@@ -45,10 +45,19 @@ const rules: MacroRule[] = [
     }
 ];
 
+const emptyRules: RegExp[] = [
+    /\\\</g, /\\\>/g, /\\\./g, /\\\!/g, /\\\^/g, /\\com\[(\d+)\]/g
+]
+
 // Combine patterns into one master scanner.
 const masterPattern = new RegExp(
     rules.map(r => r.pattern.source).join('|'),
-    'g'
+    'gi'
+);
+
+const masterEmptyPattern = new RegExp(
+    emptyRules.map(r => r.source).join('|'),
+    'gi'
 );
 
 export function parseCustomMacros(text: string): string {
@@ -69,7 +78,7 @@ export function parseCustomMacros(text: string): string {
             if (this.sinh != 0) classes.push("sinh");
             if (this.quake != 0) classes.push("quake");
             if (this.color != 0) classes.push("c" + this.color);
-            console.log("Text Classes", classes);
+            // console.log("Text Classes", classes);
 
             const styles = ` style="font-size: ${this.size.toFixed(2)}em;"`;
             const classDisplay = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
@@ -81,6 +90,9 @@ export function parseCustomMacros(text: string): string {
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
+    // Initial clean of empty macros
+    text = text.replaceAll(masterEmptyPattern, "")
+    
     // Loop across the document text
     while ((match = masterPattern.exec(text)) !== null) {
         // Append the raw plain text found before this macro matched
