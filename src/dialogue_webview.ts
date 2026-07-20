@@ -3,6 +3,7 @@ import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
 import { MacroDocs } from './macro_docs';
+import { parseCustomMacros } from './macro_parser';
 
 export class DialogueWebviewManager {
     private macroRegex = new RegExp("", 'g');
@@ -71,12 +72,7 @@ export class DialogueWebviewManager {
     private cleanDialogueText(text: string) {
         if (!text) return text;
         text = text.replace("<br>", "\n");
-        // Hardcode remove macro with variable for now
-        text = text.replace(/\\((?:c)|(?:com)|(?:sinv)|(?:sinh)|(?:quake))\[[^\]]*\]/gi, "");
-        text = text.replace(/\\n\<[^\>]*\>/gi, "");
-        if (this.macroDocs) {
-            text = text.replace(this.macroRegex, "");
-        }
+        text = parseCustomMacros(text);
         return text;
     }
 
@@ -97,20 +93,22 @@ export class DialogueWebviewManager {
             const node = yamlData[key];
             node.name = ""
             let webviewImgUri = '';
-    
+            
             if (node.faceset) {
                 const imgAbsolutePath = path.resolve(imgPath, `${node.faceset}.png`);
-    
+                
                 if (fs.existsSync(imgAbsolutePath)) {
                     const fileUri = vscode.Uri.file(imgAbsolutePath);
                     webviewImgUri = panel.webview.asWebviewUri(fileUri).toString();
                 }
             }
-    
-            // For now always strip macro
-            let name_match = node.text.match(/\\n<(.+)>/)
-            if (name_match) { // Match 0 is whole, 1 is capture
-                node.name = name_match[1]
+            
+            // Extract Name
+            const nameRegex = /(.*)\\n<([^>]+)>(.*)/g
+            let name_match = nameRegex.exec(node.text);
+            if (name_match) {
+                node.name = name_match[2];
+                node.text = name_match[1] + name_match[3];
             }
             
             node.text = this.cleanDialogueText(node.text);

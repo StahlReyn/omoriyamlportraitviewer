@@ -95,6 +95,83 @@
                 background-color: transparent;
             }
         }
+
+        /* Custom Text Macro States */
+        span.c1 { color: lightskyblue }
+        span.c2 { color: brown }
+        span.c3 { color: green }
+        span.c4 { color: yellow }
+        span.c5 { color: orange }
+        span.c6 { color: black }
+        span.c7 { color: gray }
+        span.c8 { color: red }
+        span.c9 { color: red }
+        span.c10 { color: red }
+        span.c11 { color: aqua }
+        span.c12 { color: darkcyan }
+        span.c13 { color: purple }
+
+
+        span.sinv {
+            display: inline-block;
+            animation: sinv 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sinv {
+            0%, 100% {
+                transform: translateY(5px);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        span.sinh {
+            display: inline-block;
+            animation: sinh 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sinh {
+            0%, 100% {
+                transform: translateX(5px);
+            }
+            50% {
+                transform: translateX(-5px);
+            }
+        }
+
+        span.sinh {
+            display: inline-block;
+            animation: sinh 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sinh {
+            0%, 100% {
+                transform: translateX(5px);
+            }
+            50% {
+                transform: translateX(-5px);
+            }
+        }
+
+        span.quake {
+            display: inline-block;
+            animation: quake 0.5s infinite; 
+        }
+
+        @keyframes quake {
+            0% { transform: translate(0, 0) }
+            10% { transform: translate(-2px, -1px) }
+            20% { transform: translate(-3px, 0px) }
+            30% { transform: translate(0px, 2px) }
+            40% { transform: translate(1px, -1px) }
+            50% { transform: translate(-1px, 2px) }
+            60% { transform: translate(-3px, 1px) }
+            70% { transform: translate(2px, 1px) }
+            80% { transform: translate(-1px, -1px) }
+            90% { transform: translate(2px, 2px) }
+            100% { transform: translate(1px, -2px) }
+        }
     </style>
 </head>
 <body>
@@ -174,7 +251,7 @@
             const incomingKeys = Object.keys(data);
 
             // Quick debug sanity check
-            console.log("Received Data Type:", Array.isArray(data) ? "Array" : typeof data);
+            // console.log("Received Data Type:", Array.isArray(data) ? "Array" : typeof data);
             console.log("Incoming Keys:", Object.keys(data));
 
             // Insert or Update, get existing if exists
@@ -291,6 +368,12 @@
                 } else if (portraitBox) {
                     portraitBox.remove();
                 }
+            }
+
+            // 4. Synchronize Main Dialogue Text Body
+            const dialogueBox = card.querySelector('.dialogue-box');
+            if (dialogueBox && dialogueBox.innerHTML !== text) {
+                dialogueBox.innerHTML = text;
             }
         }
     </script>
