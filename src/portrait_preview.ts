@@ -8,14 +8,14 @@ const tooltipSizes = [100, 200, 300, 400, 500, 0];
 export function registerPortraitPreview(context: vscode.ExtensionContext, portraitPath: string) {
     // Register command to open image in the editor
     context.subscriptions.push(
-        vscode.commands.registerCommand('extension.openImageYaml', (imgPath) => {
+        vscode.commands.registerCommand('omoriYamlPortraitViewer.openImageYaml', (imgPath) => {
             vscode.commands.executeCommand('vscode.open', vscode.Uri.file(imgPath));
         })
     );
 
     // Register command to resize image in the tooltip
     context.subscriptions.push(
-        vscode.commands.registerCommand('extension.resizeImageYaml', async ({ imgPath, size }) => {
+        vscode.commands.registerCommand('omoriYamlPortraitViewer.resizeImageYaml', async ({ imgPath, size }) => {
             currentTooltipSize = size === 0 ? 0 : parseInt(size, 10);
             await vscode.window.showInformationMessage('Changes will only take effect after reopening the tooltip due to VS Code limitations.', { modal: true });
         })
@@ -76,7 +76,7 @@ function processComment(commentText: string, document: vscode.TextDocument, port
         hoverContent = [
             '## Portrait Preview',
             '',
-            `[Open Image in IDE](command:extension.openImageYaml?${encodeURIComponent(JSON.stringify(imgPath))})`,
+            `[Open Image in IDE](command:omoriYamlPortraitViewer.openImageYaml?${encodeURIComponent(JSON.stringify(imgPath))})`,
             '',
             getSizeLinks(imgPath),
             '---',
@@ -94,7 +94,7 @@ function processComment(commentText: string, document: vscode.TextDocument, port
 function getSizeLinks(imgPath) {
     return tooltipSizes.map(size => {
         const displaySize = size === 0 ? 'No Scale' : `${size}px`;
-        let output = `[${displaySize}](command:extension.resizeImageYaml?${encodeURIComponent(JSON.stringify({ imgPath, size }))})`
+        let output = `[${displaySize}](command:omoriYamlPortraitViewer.resizeImageYaml?${encodeURIComponent(JSON.stringify({ imgPath, size }))})`
         if (size === currentTooltipSize)
             return `**${output}**`; // Bold on current
         return output;

@@ -99,7 +99,7 @@
         /* Custom Text Macro States */
         span.c1 { color: lightskyblue }
         span.c2 { color: brown }
-        span.c3 { color: green }
+        span.c3 { color: limegreen }
         span.c4 { color: yellow }
         span.c5 { color: orange }
         span.c6 { color: black }
@@ -109,7 +109,7 @@
         span.c10 { color: red }
         span.c11 { color: aqua }
         span.c12 { color: darkcyan }
-        span.c13 { color: purple }
+        span.c13 { color: mediumpurple  }
 
 
         span.sinv {
@@ -318,7 +318,7 @@
             if (msgIdSpan && msgIdSpan.innerText !== key) msgIdSpan.innerText = key;
             if (faceNameSpan && faceNameSpan.innerText !== faceset) faceNameSpan.innerText = faceset;
             if (faceIndexSpan && faceIndexSpan.innerText !== index) faceIndexSpan.innerText = index;
-            if (dialogueBox && dialogueBox.innerText !== text) dialogueBox.innerText = text;
+            if (dialogueBox && dialogueBox.innerHTML !== text) dialogueBox.innerHTML = text;
 
             // Name Container Box
             if (preDialogueBox) {
@@ -368,12 +368,6 @@
                 } else if (portraitBox) {
                     portraitBox.remove();
                 }
-            }
-
-            // 4. Synchronize Main Dialogue Text Body
-            const dialogueBox = card.querySelector('.dialogue-box');
-            if (dialogueBox && dialogueBox.innerHTML !== text) {
-                dialogueBox.innerHTML = text;
             }
         }
     </script>
