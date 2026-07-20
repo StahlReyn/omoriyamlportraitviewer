@@ -23,3 +23,5 @@ node_modules/**/*.md
 .gitignore
 .vscodeignore
 README.md
+images/**
+src/**

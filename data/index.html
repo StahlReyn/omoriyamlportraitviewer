@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        html {
+            /* font-size: var(--vscode-editor-font-size, 16px); */
+            font-size: 28px;
+        }
+        body { 
+            font-family: "OMORI_GAME", var(--vscode-font-family, sans-serif);
+            font-size: 1rem;
+            padding: 20px; 
+            color: white; 
+            background-color: rgb(44, 45, 58);
+            margin: 0;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid white;
+            padding-bottom: 10px;
+        }
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 640px; /* Game screen is 640px, box has slight padding*/
+            margin: 0 auto;
+        }
+        .omobox {
+            background-color: black;
+            border: 4px solid white;
+            outline: 2px solid black;
+            padding: 6px 14px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: rgb(89, 119, 146);
+            font-size: 0.8rem;
+        }
+        .card-body {
+            display: flex;
+            flex-flow: column;
+        }
+        .predialogue-box {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 8px;
+        }
+        .dialogue-box {
+            flex-grow: 1;
+            font-size: 1rem;
+            line-height: 1.25;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 106px;
+        }
+        .portrait-box {
+            width: 106px;
+            height: 106px;
+            padding: 0;
+        }
+        .portrait-sprite {
+            width: 106px;
+            height: 106px;
+            background-repeat: no-repeat;
+            flex-shrink: 0;
+        }
+
+        /* Active highlight state */
+        .dialogue-card {
+            padding: 8px;
+            border: 4px solid transparent;
+        }
+
+        .dialogue-card.highlighted {
+            animation: highlightFade 1.0s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes highlightFade {
+            0% {
+                border-color: #ffe270;
+                background-color: rgba(255, 219, 112, 0.3);
+            }
+            100% {
+                border-color: transparent;
+                background-color: transparent;
+            }
+        }
+
+        /* Custom Text Macro States */
+        span.c1 { color: lightskyblue }
+        span.c2 { color: brown }
+        span.c3 { color: limegreen }
+        span.c4 { color: yellow }
+        span.c5 { color: orange }
+        span.c6 { color: black }
+        span.c7 { color: gray }
+        span.c8 { color: red }
+        span.c9 { color: red }
+        span.c10 { color: red }
+        span.c11 { color: aqua }
+        span.c12 { color: darkcyan }
+        span.c13 { color: mediumpurple  }
+
+
+        span.sinv {
+            display: inline-block;
+            animation: sinv 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sinv {
+            0%, 100% { transform: translateY(5px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        span.sinh {
+            display: inline-block;
+            animation: sinh 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sinh {
+            0%, 100% { transform: translateX(5px); }
+            50% { transform: translateX(-5px); }
+        }
+
+        span.quake {
+            display: inline-block;
+            animation: quake 0.5s infinite; 
+        }
+
+        @keyframes quake {
+            0% { transform: translate(0, 0) }
+            10% { transform: translate(-2px, -1px) }
+            20% { transform: translate(-3px, 0px) }
+            30% { transform: translate(0px, 2px) }
+            40% { transform: translate(1px, -1px) }
+            50% { transform: translate(-1px, 2px) }
+            60% { transform: translate(-3px, 1px) }
+            70% { transform: translate(2px, 1px) }
+            80% { transform: translate(-1px, -1px) }
+            90% { transform: translate(2px, 2px) }
+            100% { transform: translate(1px, -2px) }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dialogue Preview</h1>
+    <div id="flow" class="flow-container"></div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        // Keep track of the last rendered dataset to find differences
+        let lastDataSnapshot = null;
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'load' || message.command === 'update') {
+                const newData = message.data || {};
+                const changedKeys = findChangedKeys(lastDataSnapshot, newData);
+
+                renderFlow(newData);
+                lastDataSnapshot = JSON.parse(JSON.stringify(newData));
+                triggerCardFocus(changedKeys);
+            }
+        });
+
+        // Helper function to find which item text, faceindex, name, etc., shifted
+        function findChangedKeys(oldData, newData) {
+            if (!oldData) return null; // Ignore on initial 'load'
+
+            const newKeys = Object.keys(newData);
+            let output = []
+            
+            for (const key of newKeys) {
+                // If the key didn't exist before, it's a newly added card
+                if (!oldData[key]) return key;
+
+                // If the contents changed, it's an edited card
+                const oldNodeStr = JSON.stringify(oldData[key]);
+                const newNodeStr = JSON.stringify(newData[key]);
+                if (oldNodeStr !== newNodeStr) {
+                    output.push(key);
+                }
+            }
+            return output;
+        }
+
+        // Handles scrolling and cleanly applying/removing classes
+        function triggerCardFocus(keys) {
+            if (keys.length == 0) return;
+
+            // Scroll to first edited card
+            const firstCard = document.getElementById(`msg-${keys[0]}`);
+            firstCard.scrollIntoView({
+                behavior: 'auto',
+                block: 'center'
+            });
+
+            for (const key of keys) {
+                const card = document.getElementById(`msg-${key}`);
+                if (!card) return;
+    
+                card.classList.remove('highlighted'); // Remove the class first in case the user saves the same card rapidly
+                void card.offsetWidth; // Restart the animation timeline
+                card.classList.add('highlighted');
+    
+                setTimeout(() => {
+                    card.classList.remove('highlighted');
+                }, 1000);
+            }
+        }
+
+        // Notify the extension that the script engine is ready to accept commands
+        vscode.postMessage({ command: 'ready' });
+
+        function renderFlow(data) {
+            const container = document.getElementById('flow');
+            const incomingKeys = Object.keys(data);
+
+            // Quick debug sanity check
+            // console.log("Received Data Type:", Array.isArray(data) ? "Array" : typeof data);
+            console.log("Incoming Keys:", Object.keys(data));
+
+            // Insert or Update, get existing if exists
+            incomingKeys.forEach(key => {
+                const node = data[key];
+                let card = document.getElementById(`msg-${key}`);
+
+                if (card) {
+                    updateMessageCard(card, node, key);
+                } else {
+                    card = createMessageCard(node, key);
+                    container.appendChild(card);
+                }
+            });
+
+            // Delete if new version does not have
+            const currentCardElements = Array.from(container.children);
+            currentCardElements.forEach(cardElement => {
+                const originalKey = cardElement.id.replace('msg-', '');
+                if (!data[originalKey]) {
+                    cardElement.remove();
+                }
+            });
+        }
+
+        function createMessageCard(node, key) {
+            const card = document.createElement('div');
+            card.className = 'dialogue-card';
+            card.id = `msg-${key}`;
+
+            // Skeleton frame structure
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="msg-id"></span>
+                    <div class="face-info">Face: <span class="face-name"></span> [<span class="face-index"></span>]</div>
+                </div>
+                <div class="card-body">
+                    <div class="predialogue-box">
+                        <div style="flex-grow: 1;"></div>
+                    </div>
+                    <div class="dialogue-box omobox"></div>
+                </div>
+            `;
+
+            // Moved to populate the template fields by update
+            updateMessageCard(card, node, key);
+            
+            return card;
+        }
+
+        function updateMessageCard(card, node, key) {
+            const faceset = node.faceset || 'None';
+            const text = node.text || '';
+            const index = node.faceindex ?? 0;
+
+            // Grab the template elements
+            const msgIdSpan = card.querySelector('.msg-id');
+            const faceNameSpan = card.querySelector('.face-name');
+            const faceIndexSpan = card.querySelector('.face-index');
+
+            const dialogueBox = card.querySelector('.dialogue-box');
+            const preDialogueBox = card.querySelector('.predialogue-box');
+
+            if (msgIdSpan && msgIdSpan.innerText !== key) msgIdSpan.innerText = key;
+            if (faceNameSpan && faceNameSpan.innerText !== faceset) faceNameSpan.innerText = faceset;
+            if (faceIndexSpan && faceIndexSpan.innerText !== index) faceIndexSpan.innerText = index;
+            if (dialogueBox && dialogueBox.innerHTML !== text) dialogueBox.innerHTML = text;
+
+            // Name Container Box
+            if (preDialogueBox) {
+                let nameBox = preDialogueBox.querySelector('.name-box');
+                if (node.name) {
+                    if (!nameBox) {
+                        nameBox = document.createElement('div');
+                        nameBox.className = 'name-box omobox';
+                        preDialogueBox.insertBefore(nameBox, preDialogueBox.firstChild);
+                    }
+                    if (nameBox.innerText !== node.name) nameBox.innerText = node.name;
+                } else if (nameBox) {
+                    nameBox.remove();
+                }
+            }
+
+            // Portrait Sprites
+            if (preDialogueBox) {
+                let portraitBox = preDialogueBox.querySelector('.portrait-box');
+                
+                if (node.imageUri) {
+                    if (!portraitBox) {
+                        portraitBox = document.createElement('div');
+                        portraitBox.className = 'portrait-box omobox';
+                        preDialogueBox.appendChild(portraitBox);
+                    }
+
+                    let sprite = portraitBox.querySelector('.portrait-sprite');
+                    if (!sprite) {
+                        sprite = document.createElement('div');
+                        sprite.className = 'portrait-sprite';
+                        portraitBox.appendChild(sprite);
+                    }
+
+                    // Set image and shift offset to display
+                    const columns = 4;
+                    const size = 106;
+                    const posX = -( (index % columns) * size );
+                    const posY = -( Math.floor(index / columns) * size );
+
+                    const targetBgImage = `url("${node.imageUri}")`;
+                    const targetBgPos = `${posX}px ${posY}px`;
+
+                    // Only modify layout properties if values actually shifted
+                    if (sprite.style.backgroundImage !== targetBgImage) sprite.style.backgroundImage = targetBgImage;
+                    if (sprite.style.backgroundPosition !== targetBgPos) sprite.style.backgroundPosition = targetBgPos;
+                } else if (portraitBox) {
+                    portraitBox.remove();
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>
