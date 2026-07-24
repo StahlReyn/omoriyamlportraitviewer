@@ -63,6 +63,15 @@
 						"source": { "type": "string", "description": "Origin of the macro data." }
 						}
 					}
+				},
+				"omoriYamlPortraitViewer.replacementMacrosOverrides": {
+					"type": "object",
+					"markdownDescription": "Override or add simple replacement macros. These are similar to plugin parameter macros.",
+					"default": {},
+					"additionalProperties": {
+						"type": "string",
+						"markdownDescription": "The text string value that replaces the macro key."
+					}
 				}
 			}
 		},

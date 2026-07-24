@@ -1,3 +1,5 @@
+import { getReplacementMacros, ReplacementMacros } from "./macro_docs";
+
 interface ParserState {
     size: number;
     color: number;
@@ -65,6 +67,10 @@ const masterEmptyPattern = new RegExp(
     'gi'
 );
 
+// Create a regex that safely escapes the forward slash and captures the keys
+let replacementMacros: ReplacementMacros = {};
+let replacementRegex: RegExp | null = null;
+
 export function parseCustomMacros(text: string): string {
     const objToStyles = (obj) => {
         return Object.entries(obj).map(([key, val]) => `${key}: ${val}`).join(';');
@@ -104,8 +110,21 @@ export function parseCustomMacros(text: string): string {
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
+    // Only get new if never gotten yet
+    if (Object.keys(replacementMacros).length === 0) {
+        replacementMacros = getReplacementMacros();
+        replacementRegex = new RegExp(
+            Object.keys(replacementMacros).map(k => k.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|'),
+            'g'
+        );
+    }
+
+    // Replace all matches in a single pass
+    if (replacementRegex)
+        text = text.replace(replacementRegex, match => replacementMacros[match]);
+
     // Initial clean of empty macros
-    text = text.replaceAll(masterEmptyPattern, "")
+    text = text.replace(masterEmptyPattern, "")
     
     // Loop across the document text
     while ((match = masterPattern.exec(text)) !== null) {

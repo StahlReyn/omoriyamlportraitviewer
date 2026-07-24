@@ -1,5 +1,5 @@
 import { DialogueWebviewManager } from './dialogue_webview';
-import { getMacroDocs, MacroDocs, registerClearCachedMacroDocs } from './macro_docs';
+import { setupMacroManagers } from './macro_docs';
 import { MacroHighlightManager } from './macro_highlight';
 import { registerPortraitPreview } from './portrait_preview';
 
@@ -12,7 +12,7 @@ function activate(context: vscode.ExtensionContext) {
 
     let portraitPath = config.get('portraitPath', "../../img/faces/");
 
-	registerClearCachedMacroDocs(context)
+	setupMacroManagers(context)
 
 	if (enableMacroHighlight) {
         let macroHighlightManager = new MacroHighlightManager();

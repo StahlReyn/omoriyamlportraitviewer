@@ -41,18 +41,18 @@ export class MacroHighlightManager {
         let activeEditor = vscode.window.activeTextEditor;
     
         // Trigger update on launch, switching tabs, or typing text
-        if (activeEditor) { this.updateDecorations(context, activeEditor); }
+        if (activeEditor) { this.updateDecorations(activeEditor); }
     
         vscode.window.onDidChangeActiveTextEditor(editor => { 
-            activeEditor = editor; this.updateDecorations(context, activeEditor); 
+            activeEditor = editor; this.updateDecorations(activeEditor); 
         }, null, context.subscriptions);
     
         vscode.workspace.onDidChangeTextDocument(event => { 
-            if (activeEditor && event.document === activeEditor.document) { this.updateDecorations(context, activeEditor); } 
+            if (activeEditor && event.document === activeEditor.document) { this.updateDecorations(activeEditor); } 
         }, null, context.subscriptions);
     }
     
-    private updateDecorations(context: vscode.ExtensionContext, activeEditor: vscode.TextEditor | undefined) {
+    private updateDecorations(activeEditor: vscode.TextEditor | undefined) {
         if (!activeEditor || activeEditor.document.languageId !== 'yaml') {
             return;
         }
@@ -63,7 +63,7 @@ export class MacroHighlightManager {
         const innerTextDecorations: vscode.DecorationOptions[] = [];
         const simpleMacroDecorations: vscode.DecorationOptions[] = [];
 
-        const macroDocs = getMacroDocs(context);
+        const macroDocs = getMacroDocs();
     
         let match: RegExpExecArray | null;
     
