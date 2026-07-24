@@ -49,6 +49,20 @@
 					"type": "string",
 					"default": "../../img/faces/",
 					"description": "The path to the faceset image folder."
+				},
+				"omoriYamlPortraitViewer.macroDocsOverrides": {
+					"type": "object",
+					"markdownDescription": "Override or add custom macro documentation keys. Workspace rules will override global user rules.",
+					"default": {},
+					"additionalProperties": {
+						"type": "object",
+						"required": ["title", "desc"],
+						"properties": {
+						"title": { "type": "string", "description": "The title of the command/macro." },
+						"desc": { "type": "string", "description": "Detailed description of what it does." },
+						"source": { "type": "string", "description": "Origin of the macro data." }
+						}
+					}
 				}
 			}
 		},

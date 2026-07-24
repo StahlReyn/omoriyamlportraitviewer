@@ -2,25 +2,14 @@ import * as vscode from 'vscode';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import * as path from 'path';
-import { MacroDocs } from './macro_docs';
 import { parseCustomMacros } from './macro_parser';
 
 export class DialogueWebviewManager {
-    private macroRegex = new RegExp("", 'g');
     private imgPath = "../../img/faces"
-    private macroDocs: MacroDocs = {}
     private panel: vscode.WebviewPanel | null = null;
 
-    public constructor(imgPath: string, macroDocs: MacroDocs) {
+    public constructor(imgPath: string) {
         this.imgPath = imgPath;
-        this.setMacroDocs(macroDocs);
-    }
-
-    public setMacroDocs(macroDocs: MacroDocs) {
-        this.macroDocs = macroDocs;
-        const macroKeys = Object.keys(macroDocs);
-        const escapedKeys = macroKeys.map(key => key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
-        this.macroRegex = new RegExp(escapedKeys.join('|'), 'gi');
     }
     
     public registerPortraitWebView(context: vscode.ExtensionContext) {

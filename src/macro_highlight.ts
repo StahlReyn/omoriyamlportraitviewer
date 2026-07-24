@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
-import { MacroDocs, MacroInfo } from './macro_docs';
+import { getMacroDocs, MacroDocs, MacroInfo } from './macro_docs';
 
 export class MacroHighlightManager {
-    private macroDocs: MacroDocs = {};
-
     private static readonly fallbackDoc: MacroInfo = { 
         title: 'Macro Operator', 
         desc: '*Unknown Macro. This may be defined by an external plugin.*',
@@ -38,27 +36,23 @@ export class MacroHighlightManager {
         /|/,
         /(<br>)/                                   // Group 5: Line breaks
     ].map(regex => regex.source).join(''), 'g');
-
-    public constructor(macroDocs) {
-        this.macroDocs = macroDocs;
-    }
     
     public processHighlight(context: vscode.ExtensionContext) {
         let activeEditor = vscode.window.activeTextEditor;
     
         // Trigger update on launch, switching tabs, or typing text
-        if (activeEditor) { this.updateDecorations(activeEditor); }
+        if (activeEditor) { this.updateDecorations(context, activeEditor); }
     
         vscode.window.onDidChangeActiveTextEditor(editor => { 
-            activeEditor = editor; this.updateDecorations(activeEditor); 
+            activeEditor = editor; this.updateDecorations(context, activeEditor); 
         }, null, context.subscriptions);
     
         vscode.workspace.onDidChangeTextDocument(event => { 
-            if (activeEditor && event.document === activeEditor.document) { this.updateDecorations(activeEditor); } 
+            if (activeEditor && event.document === activeEditor.document) { this.updateDecorations(context, activeEditor); } 
         }, null, context.subscriptions);
     }
     
-    private updateDecorations(activeEditor: vscode.TextEditor | undefined) {
+    private updateDecorations(context: vscode.ExtensionContext, activeEditor: vscode.TextEditor | undefined) {
         if (!activeEditor || activeEditor.document.languageId !== 'yaml') {
             return;
         }
@@ -68,8 +62,10 @@ export class MacroHighlightManager {
         const macroTextDecorations: vscode.DecorationOptions[] = [];
         const innerTextDecorations: vscode.DecorationOptions[] = [];
         const simpleMacroDecorations: vscode.DecorationOptions[] = [];
+
+        const macroDocs = getMacroDocs(context);
     
-        let match;
+        let match: RegExpExecArray | null;
     
         while ((match = MacroHighlightManager.macroRegex.exec(text))) {
             const fullMatchStr = match[0];
@@ -78,10 +74,11 @@ export class MacroHighlightManager {
             const macroPrefix = match[1]; 
             const innerAngleText = match[2]; 
             const innerSquareText = match[3];
-    
+
+            
             // Fetch custom documentation card based on the tag prefix or simple name
             const docLookupKey = macroPrefix ? macroPrefix.toLowerCase() : fullMatchStr.toLowerCase();
-            const docInfo = this.macroDocs[docLookupKey] || MacroHighlightManager.fallbackDoc;
+            const docInfo = macroDocs[docLookupKey] || MacroHighlightManager.fallbackDoc;
     
             // --- BRANCH 1: MACROS WITH PARAMETERS ---
             if (innerAngleText !== undefined || innerSquareText !== undefined) {

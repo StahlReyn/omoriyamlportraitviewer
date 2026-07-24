@@ -1,22 +1,21 @@
 import { DialogueWebviewManager } from './dialogue_webview';
-import { getMacroDocs, MacroDocs } from './macro_docs';
+import { getMacroDocs, MacroDocs, registerClearCachedMacroDocs } from './macro_docs';
 import { MacroHighlightManager } from './macro_highlight';
 import { registerPortraitPreview } from './portrait_preview';
 
 import * as vscode from 'vscode';
 
-let macroDocs: MacroDocs = {};
-
 function activate(context: vscode.ExtensionContext) {
-	const config = vscode.workspace.getConfiguration('myCoolExtension');
+	const config = vscode.workspace.getConfiguration('omoriYamlPortraitViewer');
 	const enableMacroHighlight = config.get('enableMacroHighlight', true);
 	const enablePortraitPreview = config.get('enablePortraitPreview', true);
-	
-    macroDocs = getMacroDocs(context);
+
     let portraitPath = config.get('portraitPath', "../../img/faces/");
 
+	registerClearCachedMacroDocs(context)
+
 	if (enableMacroHighlight) {
-        let macroHighlightManager = new MacroHighlightManager(macroDocs);
+        let macroHighlightManager = new MacroHighlightManager();
         macroHighlightManager.processHighlight(context);
 	}
 	
@@ -24,7 +23,7 @@ function activate(context: vscode.ExtensionContext) {
 		registerPortraitPreview(context, portraitPath);
 	}
     
-    let dialogueWebviewManager = new DialogueWebviewManager(portraitPath, macroDocs)
+    let dialogueWebviewManager = new DialogueWebviewManager(portraitPath)
     dialogueWebviewManager.registerPortraitWebView(context)
 }
 
